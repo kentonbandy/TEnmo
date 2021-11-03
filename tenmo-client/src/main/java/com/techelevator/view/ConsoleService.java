@@ -74,7 +74,7 @@ public class ConsoleService {
 		return result;
 	}
 
-	public void displayBalance(double balance) {
+	public void displayBalance(String balance) {
 		out.println("Your current account balance is: $" + balance);
 	}
 }
