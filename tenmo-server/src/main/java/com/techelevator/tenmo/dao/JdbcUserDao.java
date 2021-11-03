@@ -1,5 +1,6 @@
 package com.techelevator.tenmo.dao;
 
+import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.User;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -77,6 +78,28 @@ public class JdbcUserDao implements UserDao {
         }
 
         return true;
+    }
+
+    public Transfer createTransfer(Transfer transfer) {
+        String sql = "insert into transfers (transfer_type_id, transfer_status_id, account_from, account_to, amount) " +
+                "values (?,?,?,?,?)";
+        int typeId = getTransferTypeId(transfer.getType());
+        int statusId = getTransferStatusId(transfer.getStatus());
+        Transfer response = jdbcTemplate.queryForObject(sql, Transfer.class, typeId, statusId, transfer.getFrom().getUsername(),
+                transfer.getTo().getUsername(), transfer.getAmount());
+        // finish method (apply transfer)
+
+        return response;
+    }
+
+    private int getTransferStatusId(String status) {
+        String sql = "select transfer_status_id from transfer_statuses where transfer_status_desc = ?";
+        return jdbcTemplate.queryForObject(sql,Integer.class);
+    }
+
+    private int getTransferTypeId(String type) {
+        String sql = "select transfer_type_id from transfers where transfer_type_desc = ?";
+            return jdbcTemplate.queryForObject(sql,Integer.class);
     }
 
     @Override
