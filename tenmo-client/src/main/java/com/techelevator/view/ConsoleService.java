@@ -1,6 +1,8 @@
 package com.techelevator.view;
 
 
+import com.techelevator.MoneyMath;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -75,6 +77,6 @@ public class ConsoleService {
 	}
 
 	public void displayBalance(String balance) {
-		out.println("Your current account balance is: $" + balance);
+		out.println("Your current account balance is: $" + MoneyMath.add(balance, "500.00"));
 	}
 }
