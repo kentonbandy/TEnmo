@@ -5,7 +5,12 @@ import com.techelevator.tenmo.model.UserCredentials;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.AuthenticationServiceException;
 import com.techelevator.view.ConsoleService;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+
 
 public class App {
 
@@ -72,8 +77,11 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	private void viewCurrentBalance() {
 		String url = API_BASE_URL + "/balance";
-		Double response = restTemplate.getForObject(url, double.class);
-		if (response != null) console.displayBalance(response);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setBearerAuth(currentUser.getToken());
+		HttpEntity entity = new HttpEntity<>(headers);
+		ResponseEntity<String> balance = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+		console.displayBalance(balance.getBody());
 	}
 
 	private void viewTransferHistory() {
