@@ -87,26 +87,26 @@ public class JdbcUserDao implements UserDao {
 
     public List<Transfer> getTransfersForUser(String user) {
         int accountId = getUserAccountId(user);
-        String sql = "select transfer_id, username, amount from transfers join accounts on account_from = account_id " +
+        String sql = "select transfer_id, user_id, amount from transfers join accounts on account_from = account_id " +
                 "join users using(user_id) where account_to = ?;";
         SqlRowSet fromRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
-        sql = "select transfer_id, username, amount from transfers join accounts on account_to = account_id " +
+        sql = "select transfer_id, user_id, amount from transfers join accounts on account_to = account_id " +
                 "join users using(user_id) where account_from = ?;";
         SqlRowSet toRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
         List<Transfer> transfers = new ArrayList<>();
         while (fromRowSet.next()) {
             Transfer t = new Transfer();
             t.setId(fromRowSet.getInt("transfer_id"));
-            t.setFrom(fromRowSet.getString("username"));
-            t.setTo(user);
+            t.setFrom(fromRowSet.getInt("user_id"));
+            t.setTo(getUserId(user));
             t.setAmount(fromRowSet.getDouble("amount"));
             transfers.add(t);
         }
         while (toRowSet.next()) {
             Transfer t = new Transfer();
             t.setId(toRowSet.getInt("transfer_id"));
-            t.setTo(toRowSet.getString("username"));
-            t.setFrom(user);
+            t.setTo(toRowSet.getInt("user_id"));
+            t.setFrom(getUserId(user));
             t.setAmount(toRowSet.getDouble("amount"));
             transfers.add(t);
         }
@@ -132,9 +132,9 @@ public class JdbcUserDao implements UserDao {
         // set variables from transfer object
         int typeId = getTransferTypeId("Send");
         int statusId = getTransferStatusId("Approved");
-        int to = getUserAccountId(transfer.getTo());
-        int from = getUserAccountId(transfer.getFrom());
-        double fromBalance = getBalanceByUsername(transfer.getFrom());
+        int to = transfer.getTo();
+        int from = transfer.getFrom();
+        double fromBalance = getBalanceByAccountId(from);
         double amount = transfer.getAmount();
 
         // verification
@@ -167,11 +167,21 @@ public class JdbcUserDao implements UserDao {
         return jdbcTemplate.queryForObject(sql, Integer.class, username);
     }
 
+    private int getUserId(String username) {
+        String sql = "select user_id from users where username = ?";
+        return jdbcTemplate.queryForObject(sql, Integer.class, username);
+    }
+
     @Override
     public double getBalanceByUsername(String username) {
         String sql = "select balance from accounts join users using(user_id) where username = ?;";
         Double balance = jdbcTemplate.queryForObject(sql, Double.class, username);
         return balance == null ? 0 : balance;
+    }
+
+    public double getBalanceByAccountId(int id) {
+        String sql = "select balance from accounts where account_id = ?";
+        return jdbcTemplate.queryForObject(sql, Double.class, id);
     }
 
     private User mapRowToUser(SqlRowSet rs) {
