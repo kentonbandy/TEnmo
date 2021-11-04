@@ -119,17 +119,36 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	}
 
-	private void sendBucks() {
-		// TODO Auto-generated method stub
+	private void sendBucks(Transfer amountTransferred) {	// --Denny code added
+    	HttpEntity<Transfer> entity = makeTransferEntity((amountTransferred));
 		// should subtract from my account
+		try {
+			restTemplate.put(API_BASE_URL + amountTransferred.getAccountFrom(), entity);
+		} catch (RestClientResponseException | ResourceAccessException e) {
+			//some kind of output
+		}
 		//should add to someone elses account
+		try {
+			restTemplate.put(API_BASE_URL + amountTransferred.getAccountTo(), entity);
+		} catch (RestClientResponseException | ResourceAccessException e) {
+			//some kind of output
+		}
 	}
 
-	private void requestBucks() {
-		// TODO Auto-generated method stub
+	private void requestBucks(Transfer amountTransferred) {		// --Denny Code added
+		HttpEntity<Transfer> entity = makeTransferEntity((amountTransferred));
 		// should add to my account
-		// should subtract from someone elses account
-		
+		try {
+			restTemplate.put(API_BASE_URL + amountTransferred.getAccountTo(), entity);
+		} catch (RestClientResponseException | ResourceAccessException e) {
+			//some kind of output
+		}
+		//should add to someone elses account
+		try {
+			restTemplate.put(API_BASE_URL + amountTransferred.getAccountFrom(), entity);
+		} catch (RestClientResponseException | ResourceAccessException e) {
+			//some kind of output
+		}
 	}
 	
 	private void exitProgram() {
@@ -208,10 +227,10 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 	 * Denny code added
 	 * post / put entity for auth as well
 	 */
-//	private HttpEntity<Transfer> makeTransferEntity(Transfer transfer) {
-//		HttpHeaders headers = new HttpHeaders();
-//		headers.setContentType(MediaType.APPLICATION_JSON);
-//		headers.setBearerAuth(currentUser.getToken());
-//		return new HttpEntity<>(Transfer, headers);
-//	}
+	private HttpEntity<Transfer> makeTransferEntity(Transfer transfer) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setBearerAuth(currentUser.getToken());
+		return new HttpEntity<>(transfer, headers);
+	}
 }
