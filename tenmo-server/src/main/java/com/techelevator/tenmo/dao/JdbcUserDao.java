@@ -1,14 +1,20 @@
 package com.techelevator.tenmo.dao;
 
+import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.User;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
+import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,7 +65,7 @@ public class JdbcUserDao implements UserDao {
     public boolean create(String username, String password) {
 
         // create user
-        String sql = "INSERT INTO users (username, password_hash) VALUES (?, ?) RETURNING user_id";
+        String sql = "INSERT INTO users (username, password_hash) VALUES (?, ?) RETURNING user_id;";
         String password_hash = new BCryptPasswordEncoder().encode(password);
         Integer newUserId;
         try {
@@ -69,7 +75,7 @@ public class JdbcUserDao implements UserDao {
                 }
 
         // create account
-        sql = "INSERT INTO accounts (user_id, balance) values(?, ?)";
+        sql = "INSERT INTO accounts (user_id, balance) values(?, ?);";
         try {
             jdbcTemplate.update(sql, newUserId, STARTING_BALANCE);
         } catch (DataAccessException e) {
@@ -79,9 +85,91 @@ public class JdbcUserDao implements UserDao {
         return true;
     }
 
+    public List<Transfer> getTransfersForUser(String user) {
+        int accountId = getUserAccountId(user);
+        String sql = "select transfer_id, username, amount from transfers join accounts on account_from = account_id " +
+                "join users using(user_id) where account_to = ?;";
+        SqlRowSet fromRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
+        sql = "select transfer_id, username, amount from transfers join accounts on account_to = account_id " +
+                "join users using(user_id) where account_from = ?;";
+        SqlRowSet toRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
+        List<Transfer> transfers = new ArrayList<>();
+        while (fromRowSet.next()) {
+            Transfer t = new Transfer();
+            t.setId(fromRowSet.getInt("transfer_id"));
+            t.setFrom(fromRowSet.getString("username"));
+            t.setTo(user);
+            t.setAmount(fromRowSet.getDouble("amount"));
+            transfers.add(t);
+        }
+        while (toRowSet.next()) {
+            Transfer t = new Transfer();
+            t.setId(toRowSet.getInt("transfer_id"));
+            t.setTo(toRowSet.getString("username"));
+            t.setFrom(user);
+            t.setAmount(toRowSet.getDouble("amount"));
+            transfers.add(t);
+        }
+        return transfers;
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        String sql = "select user_id, username from users";
+        SqlRowSet rowSet = jdbcTemplate.queryForRowSet(sql);
+        List<User> users = new ArrayList<>();
+        while (rowSet.next()) {
+            User user = new User();
+            user.setId(rowSet.getLong("user_id"));
+            user.setUsername(rowSet.getString("username"));
+            users.add(user);
+        }
+        return users;
+    }
+
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createTransfer(Transfer transfer) throws InsufficientFundsException {
+        // set variables from transfer object
+        int typeId = getTransferTypeId("Send");
+        int statusId = getTransferStatusId("Approved");
+        int to = getUserAccountId(transfer.getTo());
+        int from = getUserAccountId(transfer.getFrom());
+        double fromBalance = getBalanceByUsername(transfer.getFrom());
+        double amount = transfer.getAmount();
+
+        // verification
+        if (amount > fromBalance) {
+            throw new InsufficientFundsException();
+        }
+
+        // perform database changes
+        String sql = "insert into transfers (transfer_type_id, transfer_status_id, account_from, account_to, amount) " +
+                "values (?,?,?,?,?);";
+        jdbcTemplate.update(sql, typeId, statusId, from, to, amount);
+        sql = "update accounts set balance = balance - ? where account_id = ?;";
+        jdbcTemplate.update(sql, amount, from);
+        sql = "update accounts set balance = balance + ? where account_id = ?;";
+        jdbcTemplate.update(sql, amount, to);
+    }
+
+    private int getTransferStatusId(String status) {
+        String sql = "select transfer_status_id from transfer_statuses where transfer_status_desc = ?;";
+        return jdbcTemplate.queryForObject(sql,Integer.class, status);
+    }
+
+    private int getTransferTypeId(String type) {
+        String sql = "select transfer_type_id from transfer_types where transfer_type_desc = ?;";
+            return jdbcTemplate.queryForObject(sql,Integer.class, type);
+    }
+
+    private int getUserAccountId(String username) {
+        String sql = "select account_id from accounts join users using(user_id) where username = ?";
+        return jdbcTemplate.queryForObject(sql, Integer.class, username);
+    }
+
     @Override
     public double getBalanceByUsername(String username) {
-        String sql = "select balance from accounts join users using(user_id) where username = ?";
+        String sql = "select balance from accounts join users using(user_id) where username = ?;";
         Double balance = jdbcTemplate.queryForObject(sql, Double.class, username);
         return balance == null ? 0 : balance;
     }
