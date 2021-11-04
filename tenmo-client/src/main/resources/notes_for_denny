@@ -1,7 +1,15 @@
-GET /balance        arguments: none     returns: double
+GET /balance        body: none     returns: double
 notes: This simply fetches the logged in user's balance
 
-GET /transfers      arguments: none     returns: List<Transfer>
+GET /users          body: none     returns: List<User>
+notes: Returns a list of users with only fields id (Long) and username (String)
+
+GET /transfers      body: none     returns: List<Transfer>
 notes: This returns a list of transfers that were either sent to or from the logged in user (use this for case 5: view transfers)
+Transfer fields: id (int), from (String), to (String), amount (double)
+
+GET /transfers/{id} body: none     returns: Transfer  --- IN PROGRESS ---
+notes: Returns all information about a transfer given the transfer id. The returned Transfer has more fields than the GET Transfers!
+Transfer fields: id (int), from (String), to (String), type (String), status (String), amount (double),
 
 POST /transfers     (in progress, will be ready soon)

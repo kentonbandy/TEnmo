@@ -20,5 +20,7 @@ public interface UserDao {
 
     void createTransfer(Transfer transfer) throws InsufficientFundsException;
 
-    public List<Transfer> getTransfersForUser(String user);
+    List<Transfer> getTransfersForUser(String user);
+
+    List<User> getAllUsers();
 }

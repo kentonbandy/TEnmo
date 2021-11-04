@@ -113,6 +113,20 @@ public class JdbcUserDao implements UserDao {
         return transfers;
     }
 
+    @Override
+    public List<User> getAllUsers() {
+        String sql = "select user_id, username from users";
+        SqlRowSet rowSet = jdbcTemplate.queryForRowSet(sql);
+        List<User> users = new ArrayList<>();
+        while (rowSet.next()) {
+            User user = new User();
+            user.setId(rowSet.getLong("user_id"));
+            user.setUsername(rowSet.getString("username"));
+            users.add(user);
+        }
+        return users;
+    }
+
     @ResponseStatus(HttpStatus.CREATED)
     public void createTransfer(Transfer transfer) throws InsufficientFundsException {
         // set variables from transfer object

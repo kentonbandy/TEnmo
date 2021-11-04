@@ -1,7 +1,7 @@
 package com.techelevator.tenmo.model;
 
 public class Transfer {
-    private int Id;
+    private int id;
     private String from;
     private String to;
     private double amount;
@@ -9,11 +9,11 @@ public class Transfer {
     private String status;
 
     public int getId() {
-        return Id;
+        return id;
     }
 
     public void setId(int id) {
-        Id = id;
+        id = id;
     }
 
     public String getFrom() {
