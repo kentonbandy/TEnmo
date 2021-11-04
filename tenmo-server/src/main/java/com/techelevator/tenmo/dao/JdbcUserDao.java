@@ -1,6 +1,8 @@
 package com.techelevator.tenmo.dao;
 
 import com.techelevator.tenmo.model.Transfer;
+import com.techelevator.tenmo.model.TransferDetails;
+import com.techelevator.tenmo.model.TransferHistory;
 import com.techelevator.tenmo.model.User;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -85,28 +87,28 @@ public class JdbcUserDao implements UserDao {
         return true;
     }
 
-    public List<Transfer> getTransfersForUser(String user) {
+    public List<TransferHistory> getTransfersForUser(String user) {
         int accountId = getUserAccountId(user);
-        String sql = "select transfer_id, user_id, amount from transfers join accounts on account_from = account_id " +
+        String sql = "select transfer_id, username, amount from transfers join accounts on account_from = account_id " +
                 "join users using(user_id) where account_to = ?;";
         SqlRowSet fromRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
-        sql = "select transfer_id, user_id, amount from transfers join accounts on account_to = account_id " +
+        sql = "select transfer_id, username, amount from transfers join accounts on account_to = account_id " +
                 "join users using(user_id) where account_from = ?;";
         SqlRowSet toRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
-        List<Transfer> transfers = new ArrayList<>();
+        List<TransferHistory> transfers = new ArrayList<>();
         while (fromRowSet.next()) {
-            Transfer t = new Transfer();
-            t.setId(fromRowSet.getInt("transfer_id"));
-            t.setFrom(fromRowSet.getInt("user_id"));
-            t.setTo(getUserId(user));
+            TransferHistory t = new TransferHistory();
+            t.setTransferId(fromRowSet.getInt("transfer_id"));
+            t.setFrom(true);
+            t.setUsername(fromRowSet.getString("username"));
             t.setAmount(fromRowSet.getDouble("amount"));
             transfers.add(t);
         }
         while (toRowSet.next()) {
-            Transfer t = new Transfer();
-            t.setId(toRowSet.getInt("transfer_id"));
-            t.setTo(toRowSet.getInt("user_id"));
-            t.setFrom(getUserId(user));
+            TransferHistory t = new TransferHistory();
+            t.setTransferId(toRowSet.getInt("transfer_id"));
+            t.setUsername(toRowSet.getString("username"));
+            t.setFrom(false);
             t.setAmount(toRowSet.getDouble("amount"));
             transfers.add(t);
         }
@@ -127,8 +129,26 @@ public class JdbcUserDao implements UserDao {
         return users;
     }
 
+    @Override
+    public TransferDetails getTransferDetails(int id) {
+        String sql = "select transfer_id, account_from, account_to, transfer_type_desc, transfer_status_desc, amount " +
+                "from transfers join transfer_types using(transfer_type_id) join transfer_statuses " +
+                "using(transfer_status_id) where transfer_id = ?;";
+        TransferDetails transfer = new TransferDetails();
+        SqlRowSet rowSet = jdbcTemplate.queryForRowSet(sql, id);
+        if (rowSet.next()) {
+            transfer.setTransferId(rowSet.getInt("transfer_id"));
+            transfer.setFrom(getUsernameFromAccountId(rowSet.getInt("account_from")));
+            transfer.setTo(getUsernameFromAccountId(rowSet.getInt("account_to")));
+            transfer.setType(rowSet.getString("transfer_type_desc"));
+            transfer.setStatus(rowSet.getString("transfer_status_desc"));
+            transfer.setAmount(rowSet.getDouble("amount"));
+        }
+        return transfer;
+    }
+
     @ResponseStatus(HttpStatus.CREATED)
-    public void createTransfer(Transfer transfer) throws InsufficientFundsException {
+    public int createTransfer(Transfer transfer) throws InsufficientFundsException {
         // set variables from transfer object
         int typeId = getTransferTypeId("Send");
         int statusId = getTransferStatusId("Approved");
@@ -143,13 +163,19 @@ public class JdbcUserDao implements UserDao {
         }
 
         // perform database changes
-        String sql = "insert into transfers (transfer_type_id, transfer_status_id, account_from, account_to, amount) " +
-                "values (?,?,?,?,?);";
-        jdbcTemplate.update(sql, typeId, statusId, from, to, amount);
+        String sql = "begin transaction;";
+        jdbcTemplate.execute(sql);
+        sql = "insert into transfers (transfer_type_id, transfer_status_id, account_from, account_to, amount) " +
+                "values (?,?,?,?,?) returning transfer_id;";
+        Integer transferId = jdbcTemplate.queryForObject(sql, Integer.class, typeId, statusId, from, to, amount);
         sql = "update accounts set balance = balance - ? where account_id = ?;";
         jdbcTemplate.update(sql, amount, from);
         sql = "update accounts set balance = balance + ? where account_id = ?;";
         jdbcTemplate.update(sql, amount, to);
+        sql = "commit;";
+        jdbcTemplate.execute(sql);
+
+        return transferId;
     }
 
     private int getTransferStatusId(String status) {
@@ -165,6 +191,11 @@ public class JdbcUserDao implements UserDao {
     private int getUserAccountId(String username) {
         String sql = "select account_id from accounts join users using(user_id) where username = ?";
         return jdbcTemplate.queryForObject(sql, Integer.class, username);
+    }
+
+    private String getUsernameFromAccountId(int id) {
+        String sql = "select username from users join accounts using(user_id) where account_id = ?";
+        return jdbcTemplate.queryForObject(sql, String.class, id);
     }
 
     private int getUserId(String username) {

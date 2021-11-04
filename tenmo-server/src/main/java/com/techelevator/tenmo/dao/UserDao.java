@@ -1,6 +1,8 @@
 package com.techelevator.tenmo.dao;
 
 import com.techelevator.tenmo.model.Transfer;
+import com.techelevator.tenmo.model.TransferDetails;
+import com.techelevator.tenmo.model.TransferHistory;
 import com.techelevator.tenmo.model.User;
 
 import java.security.Principal;
@@ -18,9 +20,11 @@ public interface UserDao {
 
     double getBalanceByUsername(String username);
 
-    void createTransfer(Transfer transfer) throws InsufficientFundsException;
+    int createTransfer(Transfer transfer) throws InsufficientFundsException;
 
-    List<Transfer> getTransfersForUser(String user);
+    List<TransferHistory> getTransfersForUser(String user);
 
     List<User> getAllUsers();
+
+    TransferDetails getTransferDetails(int id);
 }
