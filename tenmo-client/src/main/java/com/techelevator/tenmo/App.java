@@ -1,14 +1,14 @@
 package com.techelevator.tenmo;
 
 import com.techelevator.tenmo.model.AuthenticatedUser;
+import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.UserCredentials;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.AuthenticationServiceException;
 import com.techelevator.view.ConsoleService;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 
@@ -75,32 +75,60 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		}
 	}
 
-	private void viewCurrentBalance() {
+	private void viewCurrentBalance() {		// -- Denny code added
 		String url = API_BASE_URL + "/balance";
-		HttpHeaders headers = new HttpHeaders();
-		headers.setBearerAuth(currentUser.getToken());
-		HttpEntity entity = new HttpEntity<>(headers);
-		ResponseEntity<String> balance = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+//		HttpHeaders headers = new HttpHeaders();
+//		headers.setBearerAuth(currentUser.getToken());		Turned these into an auth entity class
+//		HttpEntity entity = new HttpEntity<>(headers);
+		ResponseEntity<String> balance = restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), String.class);
 		console.displayBalance(balance.getBody());
 	}
 
-	private void viewTransferHistory() {
-		// TODO Auto-generated method stub
-		
+	private Transfer[] viewTransferHistory() {	// -- Denny code added
+    	//show list of transfers from transfer table
+
+		Transfer[] transfers = null;
+		String url = API_BASE_URL + "/transfers"; //not sure about path name
+
+		try{
+			ResponseEntity<Transfer[]> transferHistory =
+					restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), Transfer[].class); //should be a list of transfers from the transfers table
+			transfers = transferHistory.getBody();
+		} catch (RestClientResponseException | ResourceAccessException e) {
+			//some kind of output
+		}
+
+		return transfers;
 	}
 
-	private void viewPendingRequests() {
-		// TODO Auto-generated method stub
-		
+	private Transfer[] viewPendingRequests() {	// -- Denny code added
+		//show list of transfers from transfer table with pending status
+
+		Transfer[] transfers = null;
+		String url = API_BASE_URL + "/transfers/pending";
+
+		try{
+			ResponseEntity<Transfer[]> transferHistory =
+					restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), Transfer[].class); //should be a list of pending transfers from the transfers table
+			transfers = transferHistory.getBody();
+		} catch (RestClientResponseException | ResourceAccessException e) {
+			//some kind of output
+		}
+
+		return transfers;
+
 	}
 
 	private void sendBucks() {
 		// TODO Auto-generated method stub
-		
+		// should subtract from my account
+		//should add to someone elses account
 	}
 
 	private void requestBucks() {
 		// TODO Auto-generated method stub
+		// should add to my account
+		// should subtract from someone elses account
 		
 	}
 	
@@ -163,4 +191,27 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		String password = console.getUserInput("Password");
 		return new UserCredentials(username, password);
 	}
+
+	/**
+	 * Denny Code added
+	 * can be used with get and delete requests
+	 * makes http headers and bearer auth
+	 * @return http headers
+	 */
+	private HttpEntity<Void> makeAuthEntity() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setBearerAuth(currentUser.getToken());
+		return new HttpEntity<>(headers);
+	}
+
+	/**
+	 * Denny code added
+	 * post / put entity for auth as well
+	 */
+//	private HttpEntity<Transfer> makeTransferEntity(Transfer transfer) {
+//		HttpHeaders headers = new HttpHeaders();
+//		headers.setContentType(MediaType.APPLICATION_JSON);
+//		headers.setBearerAuth(currentUser.getToken());
+//		return new HttpEntity<>(Transfer, headers);
+//	}
 }
