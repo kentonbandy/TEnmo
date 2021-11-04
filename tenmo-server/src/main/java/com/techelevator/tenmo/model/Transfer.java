@@ -2,8 +2,8 @@ package com.techelevator.tenmo.model;
 
 public class Transfer {
     private int Id;
-    private BasicUser from;
-    private BasicUser to;
+    private String from;
+    private String to;
     private String type;
     private String status;
     private String amount;
@@ -16,19 +16,19 @@ public class Transfer {
         Id = id;
     }
 
-    public BasicUser getFrom() {
+    public String getFrom() {
         return from;
     }
 
-    public void setFrom(BasicUser from) {
+    public void setFrom(String from) {
         this.from = from;
     }
 
-    public BasicUser getTo() {
+    public String getTo() {
         return to;
     }
 
-    public void setTo(BasicUser to) {
+    public void setTo(String to) {
         this.to = to;
     }
 

@@ -1,5 +1,6 @@
 package com.techelevator.tenmo.controller;
 
+import com.techelevator.tenmo.dao.InsufficientFundsException;
 import com.techelevator.tenmo.dao.UserDao;
 import com.techelevator.tenmo.model.Transfer;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,8 +26,8 @@ public class TenmoController {
     }
 
     @RequestMapping(path = "/transfer", method = RequestMethod.POST)
-    public Transfer processTransfer(@RequestBody Transfer transfer) {
-        return dao.createTransfer(transfer);
+    public void processTransfer(@RequestBody Transfer transfer) throws InsufficientFundsException {
+        dao.createTransfer(transfer);
     }
 
 }

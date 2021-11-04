@@ -17,5 +17,5 @@ public interface UserDao {
 
     double getBalanceByUsername(String username);
 
-    Transfer createTransfer(Transfer transfer);
+    void createTransfer(Transfer transfer) throws InsufficientFundsException;
 }
