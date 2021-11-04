@@ -1,0 +1,7 @@
+GET /balance        arguments: none     returns: double
+notes: This simply fetches the logged in user's balance
+
+GET /transfers      arguments: none     returns: List<Transfer>
+notes: This returns a list of transfers that were either sent to or from the logged in user (use this for case 5: view transfers)
+
+POST /transfers     (in progress, will be ready soon)

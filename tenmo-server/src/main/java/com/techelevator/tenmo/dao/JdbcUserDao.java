@@ -9,10 +9,12 @@ import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -83,15 +85,43 @@ public class JdbcUserDao implements UserDao {
         return true;
     }
 
+    public List<Transfer> getTransfersForUser(String user) {
+        int accountId = getUserAccountId(user);
+        String sql = "select transfer_id, username, amount from transfers join accounts on account_from = account_id " +
+                "join users using(user_id) where account_to = ?;";
+        SqlRowSet fromRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
+        sql = "select transfer_id, username, amount from transfers join accounts on account_to = account_id " +
+                "join users using(user_id) where account_from = ?;";
+        SqlRowSet toRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
+        List<Transfer> transfers = new ArrayList<>();
+        while (fromRowSet.next()) {
+            Transfer t = new Transfer();
+            t.setId(fromRowSet.getInt("transfer_id"));
+            t.setFrom(fromRowSet.getString("username"));
+            t.setTo(user);
+            t.setAmount(fromRowSet.getDouble("amount"));
+            transfers.add(t);
+        }
+        while (toRowSet.next()) {
+            Transfer t = new Transfer();
+            t.setId(toRowSet.getInt("transfer_id"));
+            t.setTo(toRowSet.getString("username"));
+            t.setFrom(user);
+            t.setAmount(toRowSet.getDouble("amount"));
+            transfers.add(t);
+        }
+        return transfers;
+    }
+
     @ResponseStatus(HttpStatus.CREATED)
     public void createTransfer(Transfer transfer) throws InsufficientFundsException {
         // set variables from transfer object
-        int typeId = getTransferTypeId(transfer.getType());
-        int statusId = getTransferStatusId(transfer.getStatus());
+        int typeId = getTransferTypeId("Send");
+        int statusId = getTransferStatusId("Approved");
         int to = getUserAccountId(transfer.getTo());
         int from = getUserAccountId(transfer.getFrom());
         double fromBalance = getBalanceByUsername(transfer.getFrom());
-        double amount = Double.parseDouble(transfer.getAmount());
+        double amount = transfer.getAmount();
 
         // verification
         if (amount > fromBalance) {

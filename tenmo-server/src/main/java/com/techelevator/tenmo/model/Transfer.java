@@ -4,9 +4,9 @@ public class Transfer {
     private int Id;
     private String from;
     private String to;
+    private double amount;
     private String type;
     private String status;
-    private String amount;
 
     public int getId() {
         return Id;
@@ -32,6 +32,14 @@ public class Transfer {
         this.to = to;
     }
 
+    public double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(double amount) {
+        this.amount = amount;
+    }
+
     public String getType() {
         return type;
     }
@@ -46,13 +54,5 @@ public class Transfer {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public String getAmount() {
-        return amount;
-    }
-
-    public void setAmount(String amount) {
-        this.amount = amount;
     }
 }
