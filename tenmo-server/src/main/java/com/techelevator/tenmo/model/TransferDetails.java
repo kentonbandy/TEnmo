@@ -1,35 +1,35 @@
 package com.techelevator.tenmo.model;
 
-public class Transfer {
+public class TransferDetails {
 
-    private int id;
-    private int from; //using account_id instead
-    private int to; //using account_id instead
+    private int transferId;
+    private String from;
+    private String to;
     private String type;
     private String status;
-    private String amount;
+    private double amount;
 
-    public int getId() {
-        return id;
+    public int getTransferId() {
+        return transferId;
     }
 
-    public void setId(int id) {
-        id = id;
+    public void setTransferId(int transferId) {
+        this.transferId = transferId;
     }
 
-    public int getFrom() {
+    public String getFrom() {
         return from;
     }
 
-    public void setFrom(int from) {
+    public void setFrom(String from) {
         this.from = from;
     }
 
-    public int getTo() {
+    public String getTo() {
         return to;
     }
 
-    public void setTo(int to) {
+    public void setTo(String to) {
         this.to = to;
     }
 
@@ -49,11 +49,11 @@ public class Transfer {
         this.status = status;
     }
 
-    public String getAmount() {
+    public double getAmount() {
         return amount;
     }
 
-    public void setAmount(String amount) {
+    public void setAmount(double amount) {
         this.amount = amount;
     }
 }

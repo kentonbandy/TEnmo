@@ -2,6 +2,8 @@ package com.techelevator.view;
 
 
 import com.techelevator.MoneyMath;
+import com.techelevator.tenmo.model.Transfer;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -78,5 +80,22 @@ public class ConsoleService {
 
 	public void displayBalance(String balance) {
 		out.println("Your current account balance is: $" + MoneyMath.add(balance, "500.00"));
+	}
+
+    public void displayTransferHistory(Transfer[] transfers) {
+
+		// This is just for testing, not finished!
+
+		bar();
+		System.out.println("Transfers");
+		System.out.println("ID      From/To            Amount");
+		bar();
+		for (Transfer transfer : transfers) {
+			System.out.println(transfer.getId() + "      " + "From: " + transfer.getFrom() + "            $" + MoneyMath.format(transfer.getAmount()));
+		}
+    }
+
+    private void bar() {
+		System.out.println("------------------------------------");
 	}
 }
