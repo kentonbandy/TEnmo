@@ -1,14 +1,20 @@
 package com.techelevator.tenmo.dao;
 
-import com.techelevator.tenmo.model.User;
+import com.techelevator.tenmo.model.*;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.relational.core.sql.In;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
+import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,7 +65,7 @@ public class JdbcUserDao implements UserDao {
     public boolean create(String username, String password) {
 
         // create user
-        String sql = "INSERT INTO users (username, password_hash) VALUES (?, ?) RETURNING user_id";
+        String sql = "INSERT INTO users (username, password_hash) VALUES (?, ?) RETURNING user_id;";
         String password_hash = new BCryptPasswordEncoder().encode(password);
         Integer newUserId;
         try {
@@ -69,7 +75,7 @@ public class JdbcUserDao implements UserDao {
                 }
 
         // create account
-        sql = "INSERT INTO accounts (user_id, balance) values(?, ?)";
+        sql = "INSERT INTO accounts (user_id, balance) values(?, ?);";
         try {
             jdbcTemplate.update(sql, newUserId, STARTING_BALANCE);
         } catch (DataAccessException e) {
@@ -79,11 +85,142 @@ public class JdbcUserDao implements UserDao {
         return true;
     }
 
+    public List<TransferHistory> getTransfersForUser(String user) {
+        int accountId = getUserAccountIdByUsername(user);
+        String sql = "select transfer_id, username, amount from transfers join accounts on account_from = account_id " +
+                "join users using(user_id) where account_to = ?;";
+        SqlRowSet fromRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
+        sql = "select transfer_id, username, amount from transfers join accounts on account_to = account_id " +
+                "join users using(user_id) where account_from = ?;";
+        SqlRowSet toRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
+        List<TransferHistory> transfers = new ArrayList<>();
+        while (fromRowSet.next()) {
+            TransferHistory t = new TransferHistory();
+            t.setTransferId(fromRowSet.getInt("transfer_id"));
+            t.setFrom(true);
+            t.setUsername(fromRowSet.getString("username"));
+            t.setAmount(fromRowSet.getDouble("amount"));
+            transfers.add(t);
+        }
+        while (toRowSet.next()) {
+            TransferHistory t = new TransferHistory();
+            t.setTransferId(toRowSet.getInt("transfer_id"));
+            t.setUsername(toRowSet.getString("username"));
+            t.setFrom(false);
+            t.setAmount(toRowSet.getDouble("amount"));
+            transfers.add(t);
+        }
+        return transfers;
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        String sql = "select user_id, username from users";
+        SqlRowSet rowSet = jdbcTemplate.queryForRowSet(sql);
+        List<User> users = new ArrayList<>();
+        while (rowSet.next()) {
+            User user = new User();
+            user.setId(rowSet.getLong("user_id"));
+            user.setUsername(rowSet.getString("username"));
+            users.add(user);
+        }
+        return users;
+    }
+
+    @Override
+    public TransferDetails getTransferDetails(int id) {
+        String sql = "select transfer_id, account_from, account_to, transfer_type_desc, transfer_status_desc, amount " +
+                "from transfers join transfer_types using(transfer_type_id) join transfer_statuses " +
+                "using(transfer_status_id) where transfer_id = ?;";
+        TransferDetails transfer = new TransferDetails();
+        SqlRowSet rowSet = jdbcTemplate.queryForRowSet(sql, id);
+        if (rowSet.next()) {
+            transfer.setTransferId(rowSet.getInt("transfer_id"));
+            transfer.setFrom(getUsernameFromAccountId(rowSet.getInt("account_from")));
+            transfer.setTo(getUsernameFromAccountId(rowSet.getInt("account_to")));
+            transfer.setType(rowSet.getString("transfer_type_desc"));
+            transfer.setStatus(rowSet.getString("transfer_status_desc"));
+            transfer.setAmount(rowSet.getDouble("amount"));
+        }
+        return transfer;
+    }
+
+    @ResponseStatus(HttpStatus.CREATED)
+    public int createTransfer(TransferPayment transfer) throws InsufficientFundsException {
+
+        // verification
+        double balance = getBalanceByUserId(transfer.getFromUserId());
+        if (balance < transfer.getAmount()) throw new InsufficientFundsException();
+
+        // perform database changes in a transaction
+        double amount = transfer.getAmount();
+        int from = getUserAccountIdByUserId(transfer.getFromUserId());
+        int to = getUserAccountIdByUserId(transfer.getToUserId());
+        String sql = "begin transaction;";
+        jdbcTemplate.execute(sql);
+        sql = "insert into transfers (transfer_type_id, transfer_status_id, account_from, account_to, amount) " +
+                "values (?,?,?,?,?) returning transfer_id;";
+        int transferId = jdbcTemplate.queryForObject(sql, Integer.class,
+                getTransferTypeId("Send"),
+                getTransferStatusId("Approved"),
+                from,
+                to,
+                amount);
+        sql = "update accounts set balance = balance - ? where account_id = ?;";
+        jdbcTemplate.update(sql, amount, from);
+        sql = "update accounts set balance = balance + ? where account_id = ?;";
+        jdbcTemplate.update(sql, amount, to);
+        sql = "commit;";
+        jdbcTemplate.execute(sql);
+
+        return transferId;
+    }
+
+    private int getTransferStatusId(String status) {
+        String sql = "select transfer_status_id from transfer_statuses where transfer_status_desc = ?;";
+        return jdbcTemplate.queryForObject(sql,Integer.class, status);
+    }
+
+    private int getTransferTypeId(String type) {
+        String sql = "select transfer_type_id from transfer_types where transfer_type_desc = ?;";
+            return jdbcTemplate.queryForObject(sql,Integer.class, type);
+    }
+
+    private int getUserAccountIdByUsername(String username) {
+        String sql = "select account_id from accounts join users using(user_id) where username = ?";
+        return jdbcTemplate.queryForObject(sql, Integer.class, username);
+    }
+
+    private int getUserAccountIdByUserId(int id) {
+        String sql = "select account_id from accounts where user_id = ?";
+        return jdbcTemplate.queryForObject(sql, Integer.class, id);
+    }
+
+    private String getUsernameFromAccountId(int id) {
+        String sql = "select username from users join accounts using(user_id) where account_id = ?";
+        return jdbcTemplate.queryForObject(sql, String.class, id);
+    }
+
+    private int getUserId(String username) {
+        String sql = "select user_id from users where username = ?";
+        return jdbcTemplate.queryForObject(sql, Integer.class, username);
+    }
+
     @Override
     public double getBalanceByUsername(String username) {
-        String sql = "select balance from accounts join users using(user_id) where username = ?";
+        String sql = "select balance from accounts join users using(user_id) where username = ?;";
         Double balance = jdbcTemplate.queryForObject(sql, Double.class, username);
         return balance == null ? 0 : balance;
+    }
+
+    public double getBalanceByUserId(int id) {
+        String sql = "select balance from accounts where user_id = ?";
+        return jdbcTemplate.queryForObject(sql, Double.class, id);
+    }
+
+    public double getBalanceByAccountId(int id) {
+        String sql = "select balance from accounts where account_id = ?";
+        return jdbcTemplate.queryForObject(sql, Double.class, id);
     }
 
     private User mapRowToUser(SqlRowSet rs) {

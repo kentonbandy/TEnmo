@@ -3,18 +3,18 @@ package com.techelevator.tenmo.model;
 public class Transfer {
 
     private int id;
-    private int from; //using account_id instead
-    private int to; //using account_id instead
+    private int from;
+    private int to;
+    private double amount;
     private String type;
     private String status;
-    private String amount;
 
     public int getId() {
         return id;
     }
 
     public void setId(int id) {
-        id = id;
+        this.id = id;
     }
 
     public int getFrom() {
@@ -33,6 +33,14 @@ public class Transfer {
         this.to = to;
     }
 
+    public double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(double amount) {
+        this.amount = amount;
+    }
+
     public String getType() {
         return type;
     }
@@ -47,13 +55,5 @@ public class Transfer {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public String getAmount() {
-        return amount;
-    }
-
-    public void setAmount(String amount) {
-        this.amount = amount;
     }
 }
