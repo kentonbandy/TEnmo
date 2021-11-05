@@ -1,10 +1,8 @@
 package com.techelevator.tenmo.dao;
 
-import com.techelevator.tenmo.model.Transfer;
-import com.techelevator.tenmo.model.TransferDetails;
-import com.techelevator.tenmo.model.TransferHistory;
-import com.techelevator.tenmo.model.User;
+import com.techelevator.tenmo.model.*;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.relational.core.sql.In;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
@@ -88,7 +86,7 @@ public class JdbcUserDao implements UserDao {
     }
 
     public List<TransferHistory> getTransfersForUser(String user) {
-        int accountId = getUserAccountId(user);
+        int accountId = getUserAccountIdByUsername(user);
         String sql = "select transfer_id, username, amount from transfers join accounts on account_from = account_id " +
                 "join users using(user_id) where account_to = ?;";
         SqlRowSet fromRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
@@ -148,26 +146,26 @@ public class JdbcUserDao implements UserDao {
     }
 
     @ResponseStatus(HttpStatus.CREATED)
-    public int createTransfer(Transfer transfer) throws InsufficientFundsException {
-        // set variables from transfer object
-        int typeId = getTransferTypeId("Send");
-        int statusId = getTransferStatusId("Approved");
-        int to = transfer.getTo();
-        int from = transfer.getFrom();
-        double fromBalance = getBalanceByAccountId(from);
-        double amount = transfer.getAmount();
+    public int createTransfer(TransferPayment transfer) throws InsufficientFundsException {
 
         // verification
-        if (amount > fromBalance) {
-            throw new InsufficientFundsException();
-        }
+        double balance = getBalanceByUserId(transfer.getFromUserId());
+        if (balance < transfer.getAmount()) throw new InsufficientFundsException();
 
-        // perform database changes
+        // perform database changes in a transaction
+        double amount = transfer.getAmount();
+        int from = getUserAccountIdByUserId(transfer.getFromUserId());
+        int to = getUserAccountIdByUserId(transfer.getToUserId());
         String sql = "begin transaction;";
         jdbcTemplate.execute(sql);
         sql = "insert into transfers (transfer_type_id, transfer_status_id, account_from, account_to, amount) " +
                 "values (?,?,?,?,?) returning transfer_id;";
-        Integer transferId = jdbcTemplate.queryForObject(sql, Integer.class, typeId, statusId, from, to, amount);
+        int transferId = jdbcTemplate.queryForObject(sql, Integer.class,
+                getTransferTypeId("Send"),
+                getTransferStatusId("Approved"),
+                from,
+                to,
+                amount);
         sql = "update accounts set balance = balance - ? where account_id = ?;";
         jdbcTemplate.update(sql, amount, from);
         sql = "update accounts set balance = balance + ? where account_id = ?;";
@@ -188,9 +186,14 @@ public class JdbcUserDao implements UserDao {
             return jdbcTemplate.queryForObject(sql,Integer.class, type);
     }
 
-    private int getUserAccountId(String username) {
+    private int getUserAccountIdByUsername(String username) {
         String sql = "select account_id from accounts join users using(user_id) where username = ?";
         return jdbcTemplate.queryForObject(sql, Integer.class, username);
+    }
+
+    private int getUserAccountIdByUserId(int id) {
+        String sql = "select account_id from accounts where user_id = ?";
+        return jdbcTemplate.queryForObject(sql, Integer.class, id);
     }
 
     private String getUsernameFromAccountId(int id) {
@@ -208,6 +211,11 @@ public class JdbcUserDao implements UserDao {
         String sql = "select balance from accounts join users using(user_id) where username = ?;";
         Double balance = jdbcTemplate.queryForObject(sql, Double.class, username);
         return balance == null ? 0 : balance;
+    }
+
+    public double getBalanceByUserId(int id) {
+        String sql = "select balance from accounts where user_id = ?";
+        return jdbcTemplate.queryForObject(sql, Double.class, id);
     }
 
     public double getBalanceByAccountId(int id) {
