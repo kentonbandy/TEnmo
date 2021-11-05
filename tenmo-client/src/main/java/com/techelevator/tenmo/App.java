@@ -133,7 +133,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		Scanner scanner = new Scanner(System.in);
 		TransferPayment transfer = new TransferPayment();
 
-		System.out.println("Please enter the account id of the person you wish to send money to: ");
+		System.out.println("Please enter the user id of the person you wish to send money to: ");
 		String personTo = scanner.nextLine();
 		int personToID = Integer.parseInt(personTo);
 
@@ -145,9 +145,13 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		transfer.setToUserId(personToID);
 		transfer.setAmount(amountToTransfer);
 
-    	HttpEntity<TransferPayment> entity = makeTransferPaymentEntity((transfer));
+		System.out.println("From " + transfer.getFromUserId());
+		System.out.println("To " + transfer.getToUserId());
+		System.out.println("Amount " + transfer.getAmount());
+		
 		try {
-			restTemplate.put(API_BASE_URL + "/transfer", entity);
+			ResponseEntity<TransferPayment> response =
+			restTemplate.exchange(API_BASE_URL + "/transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), TransferPayment.class);
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			//some kind of output
 		}
@@ -157,7 +161,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		Scanner scanner = new Scanner(System.in);
 		TransferPayment transfer = new TransferPayment();
 
-		System.out.println("Please enter the account id of the person you wish to request money from: ");
+		System.out.println("Please enter the user id of the person you wish to request money from: ");
 		String personFrom = scanner.nextLine();
 		int personFromID = Integer.parseInt(personFrom);
 
@@ -169,9 +173,13 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		transfer.setFromUserId(personFromID);
 		transfer.setAmount(amountToTransfer);
 
-		HttpEntity<TransferPayment> entity = makeTransferPaymentEntity((transfer));
+		System.out.println("From " + transfer.getFromUserId());
+		System.out.println("To" + transfer.getToUserId());
+		System.out.println("Amount" + transfer.getAmount());
+
 		try {
-			restTemplate.put(API_BASE_URL + "/transfer", entity);
+			ResponseEntity<TransferPayment> response =
+					restTemplate.exchange(API_BASE_URL + "/transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), TransferPayment.class);
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			//some kind of output
 		}
