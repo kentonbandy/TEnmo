@@ -148,8 +148,9 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		System.out.println("From " + transfer.getFromUserId());
 		System.out.println("To " + transfer.getToUserId());
 		System.out.println("Amount " + transfer.getAmount());
-		
+
 		try {
+			//restTemplate.put(API_BASE_URL + "/transfer", entity);
 			ResponseEntity<TransferPayment> response =
 			restTemplate.exchange(API_BASE_URL + "/transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), TransferPayment.class);
 		} catch (RestClientResponseException | ResourceAccessException e) {
@@ -177,7 +178,9 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		System.out.println("To" + transfer.getToUserId());
 		System.out.println("Amount" + transfer.getAmount());
 
+		HttpEntity<TransferPayment> entity = makeTransferPaymentEntity((transfer));
 		try {
+			//restTemplate.put(API_BASE_URL + "/transfer", entity);
 			ResponseEntity<TransferPayment> response =
 					restTemplate.exchange(API_BASE_URL + "/transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), TransferPayment.class);
 		} catch (RestClientResponseException | ResourceAccessException e) {
