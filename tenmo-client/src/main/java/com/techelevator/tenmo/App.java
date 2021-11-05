@@ -77,14 +77,13 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	private void viewCurrentBalance() {		// -- Denny code added
 		String url = API_BASE_URL + "/balance";
-//		HttpHeaders headers = new HttpHeaders();
-//		headers.setBearerAuth(currentUser.getToken());		Turned these into an auth entity class
-//		HttpEntity entity = new HttpEntity<>(headers);
+
 		ResponseEntity<String> balance = restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), String.class);
 		console.displayBalance(balance.getBody());
 	}
 
 	private Transfer[] viewTransferHistory() {	// -- Denny code added
+    	//should probably void
     	//show list of transfers from transfer table
 
 		Transfer[] transfers = null;
@@ -102,6 +101,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 	}
 
 	private Transfer[] viewPendingRequests() {	// -- Denny code added
+    	//should probably be void
 		//show list of transfers from transfer table with pending status
 
 		Transfer[] transfers = null;
@@ -119,36 +119,36 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	}
 
-	private void sendBucks(Transfer amountTransferred) {	// --Denny code added
-    	HttpEntity<Transfer> entity = makeTransferEntity((amountTransferred));
-		// should subtract from my account
-		try {
-			restTemplate.put(API_BASE_URL + amountTransferred.getAccountFrom(), entity);
-		} catch (RestClientResponseException | ResourceAccessException e) {
-			//some kind of output
-		}
-		//should add to someone elses account
-		try {
-			restTemplate.put(API_BASE_URL + amountTransferred.getAccountTo(), entity);
-		} catch (RestClientResponseException | ResourceAccessException e) {
-			//some kind of output
-		}
+	private void sendBucks() {	// --Denny code added
+//    	HttpEntity<Transfer> entity = makeTransferEntity((amountTransferred));
+//		// should subtract from my account
+//		try {
+//			restTemplate.put(API_BASE_URL + amountTransferred.getAccountFrom(), entity);
+//		} catch (RestClientResponseException | ResourceAccessException e) {
+//			//some kind of output
+//		}
+//		//should add to someone elses account
+//		try {
+//			restTemplate.put(API_BASE_URL + amountTransferred.getAccountTo(), entity);
+//		} catch (RestClientResponseException | ResourceAccessException e) {
+//			//some kind of output
+//		}
 	}
 
-	private void requestBucks(Transfer amountTransferred) {		// --Denny Code added
-		HttpEntity<Transfer> entity = makeTransferEntity((amountTransferred));
-		// should add to my account
-		try {
-			restTemplate.put(API_BASE_URL + amountTransferred.getAccountTo(), entity);
-		} catch (RestClientResponseException | ResourceAccessException e) {
-			//some kind of output
-		}
-		//should add to someone elses account
-		try {
-			restTemplate.put(API_BASE_URL + amountTransferred.getAccountFrom(), entity);
-		} catch (RestClientResponseException | ResourceAccessException e) {
-			//some kind of output
-		}
+	private void requestBucks() {		// --Denny Code added
+//		HttpEntity<Transfer> entity = makeTransferEntity((amountTransferred));
+//		// should add to my account
+//		try {
+//			restTemplate.put(API_BASE_URL + amountTransferred.getAccountTo(), entity);
+//		} catch (RestClientResponseException | ResourceAccessException e) {
+//			//some kind of output
+//		}
+//		//should add to someone elses account
+//		try {
+//			restTemplate.put(API_BASE_URL + amountTransferred.getAccountFrom(), entity);
+//		} catch (RestClientResponseException | ResourceAccessException e) {
+//			//some kind of output
+//		}
 	}
 	
 	private void exitProgram() {
