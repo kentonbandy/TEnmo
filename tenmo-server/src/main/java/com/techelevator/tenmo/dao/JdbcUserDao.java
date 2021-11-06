@@ -130,7 +130,7 @@ public class JdbcUserDao implements UserDao {
 
     @Override
     public TransferDetails getTransferDetails(int id) throws NoSuchTransferIdException, NoSuchUserException {
-        // verify transfer id
+
         validateTransferId(id);
 
         String sql = "select transfer_id, account_from, account_to, transfer_type_desc, transfer_status_desc, amount " +
@@ -196,14 +196,11 @@ public class JdbcUserDao implements UserDao {
     public int requestResponse(String username, int transferId, boolean isApproved)
             throws NoSuchTransferIdException, InsufficientFundsException, NotPendingException {
 
-        // check to see if transfers id exists and whether it is pending
         validateTransferId(transferId);
         validateIsPending(transferId);
 
-        // if rejected, update only the transfers table
         if (!isApproved) return rejectTransfer(transferId);
         else {
-            // verify the user has enough bucks
             double userBalance = getBalanceByUsername(username);
             if (userBalance < getAmountByTransferId(transferId)) throw new InsufficientFundsException();
 
@@ -239,18 +236,11 @@ public class JdbcUserDao implements UserDao {
     @ResponseStatus(HttpStatus.CREATED)
     public int createTransfer(TransferPayment transfer, String username) throws InsufficientFundsException, IllegalAccessError, NoSuchUserException {
 
-        /*
-         * verification -
-         * users can only initiate a transfer from their own account
-         * money can only be sent to valid account #s
-         * transfer amount cannot exceed balance
-         */
         if (getUserId(username) != transfer.getFromUserId()) throw new IllegalAccessError();
         validateUserId(transfer.getToUserId());
         double balance = getBalanceByUserId(transfer.getFromUserId());
         if (balance < transfer.getAmount()) throw new InsufficientFundsException();
 
-        // perform database changes in a transaction
         double amount = transfer.getAmount();
         int from = getUserAccountIdByUserId(transfer.getFromUserId());
         int to = getUserAccountIdByUserId(transfer.getToUserId());
