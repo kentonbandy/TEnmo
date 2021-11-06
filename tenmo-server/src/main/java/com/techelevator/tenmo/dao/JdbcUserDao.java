@@ -2,20 +2,16 @@ package com.techelevator.tenmo.dao;
 
 import com.techelevator.tenmo.model.*;
 import org.springframework.dao.DataAccessException;
-import org.springframework.data.relational.core.sql.In;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.client.HttpStatusCodeException;
 
-import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -133,7 +129,10 @@ public class JdbcUserDao implements UserDao {
     }
 
     @Override
-    public TransferDetails getTransferDetails(int id) {
+    public TransferDetails getTransferDetails(int id) throws NoSuchTransferIdException, NoSuchUserException {
+        // verify transfer id
+        validateTransferId(id);
+
         String sql = "select transfer_id, account_from, account_to, transfer_type_desc, transfer_status_desc, amount " +
                 "from transfers join transfer_types using(transfer_type_id) join transfer_statuses " +
                 "using(transfer_status_id) where transfer_id = ?;";
@@ -151,8 +150,10 @@ public class JdbcUserDao implements UserDao {
     }
 
     @Override
-    public int createRequest(TransferPayment request) {
+    public int createRequest(TransferPayment request, String username) throws NoSuchUserException, IllegalAccessError {
         // verification
+        if (getUserId(username) != request.getToUserId()) throw new IllegalAccessError();
+        validateUserId(request.getFromUserId());
 
         // database insert
         double amount = request.getAmount();
@@ -193,27 +194,15 @@ public class JdbcUserDao implements UserDao {
 
     @Override
     public int requestResponse(String username, int transferId, boolean isApproved)
-            throws NoSuchTransactionIdException, InsufficientFundsException, NotPendingException {
+            throws NoSuchTransferIdException, InsufficientFundsException, NotPendingException {
 
-        System.out.println(isApproved);
         // check to see if transfers id exists and whether it is pending
-        String sql = "select count(*) from transfers join transfer_statuses using(transfer_status_id) " +
-                "where transfer_id = ?;";
-        Integer i = jdbcTemplate.queryForObject(sql, Integer.class, transferId);
-        if (i == null || i < 1) throw new NoSuchTransactionIdException();
-
-        sql = "select count(*) from transfers join transfer_statuses using(transfer_status_id) " +
-                "where transfer_id = ? and transfer_status_desc = 'Pending'";
-        i = jdbcTemplate.queryForObject(sql, Integer.class, transferId);
-        if (i == null || i < 1) throw new NotPendingException();
+        validateTransferId(transferId);
+        validateIsPending(transferId);
 
         // if rejected, update only the transfers table
-        if (!isApproved) {
-            sql = "update transfers set transfer_status_id = " +
-                    "(select transfer_status_id from transfer_statuses where transfer_status_desc = 'Rejected') " +
-                    "where transfer_id = ?;";
-            jdbcTemplate.update(sql, transferId);
-        } else {
+        if (!isApproved) return rejectTransfer(transferId);
+        else {
             // verify the user has enough bucks
             double userBalance = getBalanceByUsername(username);
             if (userBalance < getAmountByTransferId(transferId)) throw new InsufficientFundsException();
@@ -238,11 +227,26 @@ public class JdbcUserDao implements UserDao {
         return transferId;
     }
 
+    private int rejectTransfer(int id) {
+        String sql = "update transfers set transfer_status_id = " +
+                "(select transfer_status_id from transfer_statuses where transfer_status_desc = 'Rejected') " +
+                "where transfer_id = ?;";
+        jdbcTemplate.update(sql, id);
+        return id;
+    }
+
 
     @ResponseStatus(HttpStatus.CREATED)
-    public int createTransfer(TransferPayment transfer) throws InsufficientFundsException {
+    public int createTransfer(TransferPayment transfer, String username) throws InsufficientFundsException, IllegalAccessError, NoSuchUserException {
 
-        // verification
+        /*
+         * verification -
+         * users can only initiate a transfer from their own account
+         * money can only be sent to valid account #s
+         * transfer amount cannot exceed balance
+         */
+        if (getUserId(username) != transfer.getFromUserId()) throw new IllegalAccessError();
+        validateUserId(transfer.getToUserId());
         double balance = getBalanceByUserId(transfer.getFromUserId());
         if (balance < transfer.getAmount()) throw new InsufficientFundsException();
 
@@ -281,23 +285,27 @@ public class JdbcUserDao implements UserDao {
     }
 
     private int getUserAccountIdByUsername(String username) {
-        String sql = "select account_id from accounts join users using(user_id) where username = ?";
+        String sql = "select account_id from accounts join users using(user_id) where username = ?;";
         return jdbcTemplate.queryForObject(sql, Integer.class, username);
     }
 
     private int getUserAccountIdByUserId(int id) {
-        String sql = "select account_id from accounts where user_id = ?";
+        String sql = "select account_id from accounts where user_id = ?;";
         return jdbcTemplate.queryForObject(sql, Integer.class, id);
     }
 
-    private String getUsernameFromAccountId(int id) {
-        String sql = "select username from users join accounts using(user_id) where account_id = ?";
-        return jdbcTemplate.queryForObject(sql, String.class, id);
+    private String getUsernameFromAccountId(int id) throws NoSuchUserException {
+        String sql = "select username from users join accounts using(user_id) where account_id = ?;";
+        String username = jdbcTemplate.queryForObject(sql, String.class, id);
+        if (username == null || username.isEmpty()) throw new NoSuchUserException();
+        return username;
     }
 
-    private int getUserId(String username) {
-        String sql = "select user_id from users where username = ?";
-        return jdbcTemplate.queryForObject(sql, Integer.class, username);
+    private int getUserId(String username) throws NoSuchUserException {
+        String sql = "select user_id from users where username = ?;";
+        Integer userId = jdbcTemplate.queryForObject(sql, Integer.class, username);
+        if (userId == null) throw new NoSuchUserException();
+        return userId;
     }
 
     @Override
@@ -308,7 +316,7 @@ public class JdbcUserDao implements UserDao {
     }
 
     public double getBalanceByUserId(int id) {
-        String sql = "select balance from accounts where user_id = ?";
+        String sql = "select balance from accounts where user_id = ?;";
         return jdbcTemplate.queryForObject(sql, Double.class, id);
     }
 
@@ -328,8 +336,28 @@ public class JdbcUserDao implements UserDao {
     }
 
     private double getAmountByTransferId(int id) {
-        String sql = "select amount from transfers where transfer_id = ?";
+        String sql = "select amount from transfers where transfer_id = ?;";
         return jdbcTemplate.queryForObject(sql, Double.class, id);
+    }
+
+    private void validateTransferId(int id) throws NoSuchTransferIdException {
+        String sql = "select count(*) from transfers join transfer_statuses using(transfer_status_id) " +
+                "where transfer_id = ?;";
+        Integer i = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        if (i == null || i < 1) throw new NoSuchTransferIdException();
+    }
+
+    private void validateUserId(int id) throws NoSuchUserException {
+        String sql = "select count(*) from users where user_id = ?";
+        Integer i = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        if (i == null || i < 1) throw new NoSuchUserException();
+    }
+
+    private void validateIsPending(int id) throws NotPendingException {
+        String sql = "select count(*) from transfers join transfer_statuses using(transfer_status_id) " +
+                "where transfer_id = ? and transfer_status_desc = 'Pending';";
+        Integer i = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        if (i == null || i < 1) throw new NotPendingException();
     }
 
 }
