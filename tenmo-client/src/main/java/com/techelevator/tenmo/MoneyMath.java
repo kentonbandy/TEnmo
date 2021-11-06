@@ -1,4 +1,4 @@
-package com.techelevator;
+package com.techelevator.tenmo;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

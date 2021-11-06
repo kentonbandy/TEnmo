@@ -1,13 +1,14 @@
 package com.techelevator.view;
 
 
-import com.techelevator.MoneyMath;
+import com.techelevator.tenmo.MoneyMath;
 import com.techelevator.tenmo.model.Transfer;
-import org.springframework.web.bind.annotation.PathVariable;
+import com.techelevator.tenmo.model.TransferHistory;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Scanner;
 
 public class ConsoleService {
@@ -47,6 +48,8 @@ public class ConsoleService {
 		return choice;
 	}
 
+
+
 	private void displayMenuOptions(Object[] options) {
 		out.println();
 		for (int i = 0; i < options.length; i++) {
@@ -79,21 +82,23 @@ public class ConsoleService {
 	}
 
 	public void displayBalance(String balance) {
-		out.println("Your current account balance is: $" + MoneyMath.add(balance, "500.00"));
+		out.println("Your current account balance is: $" + balance);
 	}
 
-    public void displayTransferHistory(Transfer[] transfers) {
-
-		// This is just for testing, not finished!
+    public void displayTransferHistory(List<TransferHistory> transfers) {
 
 		bar();
 		System.out.println("Transfers");
 		System.out.println("ID      From/To            Amount");
 		bar();
-		for (Transfer transfer : transfers) {
-			System.out.println(transfer.getId() + "      " + "From: " + transfer.getFrom() + "            $" + MoneyMath.format(transfer.getAmount()));
+		for (TransferHistory transfer : transfers) {
+			System.out.println(transfer.toString());
 		}
-    }
+	}
+
+	public void displayPendingRequests(String pendingRequests) {
+		System.out.println(pendingRequests);
+	}
 
     private void bar() {
 		System.out.println("------------------------------------");
