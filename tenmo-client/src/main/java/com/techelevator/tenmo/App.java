@@ -148,12 +148,11 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		System.out.println("From " + transfer.getFromUserId());
 		System.out.println("To " + transfer.getToUserId());
 		System.out.println("Amount " + transfer.getAmount());
+		ResponseEntity<Integer> response;
 
-		//HttpEntity<TransferPayment> entity = makeTransferPaymentEntity((transfer)); //this is for the first entity transfer below
 		try {
-			//restTemplate.put(API_BASE_URL + "/transfer", entity); //this seems wrong
-			ResponseEntity<TransferPayment> response =
-			restTemplate.exchange(API_BASE_URL + "/transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), TransferPayment.class);
+			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
+			System.out.println(response.getBody());
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			//some kind of output
 		}
@@ -178,12 +177,12 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		System.out.println("From " + transfer.getFromUserId());
 		System.out.println("To" + transfer.getToUserId());
 		System.out.println("Amount" + transfer.getAmount());
+		ResponseEntity<Integer> response;
 
 		//HttpEntity<TransferPayment> entity = makeTransferPaymentEntity((transfer)); //this is for the first transfer entity below
 		try {
 			//restTemplate.put(API_BASE_URL + "/transfer", entity); this does not seem right
-			ResponseEntity<TransferPayment> response =
-					restTemplate.exchange(API_BASE_URL + "/transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), TransferPayment.class);
+			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			//some kind of output
 		}
