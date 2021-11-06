@@ -130,6 +130,12 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 	}
 
 	private void sendBucks() {	// --Denny code added
+
+		// Display users first (mirror readme)
+		// Use console for output and input
+		// On success: use console to display transfer details (use /transfers/{id} endpoint)
+		// On failure: use console to display error message
+
 		Scanner scanner = new Scanner(System.in);
 		TransferPayment transfer = new TransferPayment();
 
@@ -149,13 +155,13 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		System.out.println("To " + transfer.getToUserId());
 		System.out.println("Amount " + transfer.getAmount());
 		ResponseEntity<Integer> response;
-
 		try {
 			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
 			System.out.println(response.getBody());
 		} catch (RestClientResponseException | ResourceAccessException e) {
-			//some kind of output
+			System.out.println(e.getMessage());
 		}
+
 	}
 
 	private void requestBucks() {	// --Denny code added
@@ -180,12 +186,20 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		ResponseEntity<Integer> response;
 
 		//HttpEntity<TransferPayment> entity = makeTransferPaymentEntity((transfer)); //this is for the first transfer entity below
-		try {
+//		try {
 			//restTemplate.put(API_BASE_URL + "/transfer", entity); this does not seem right
+<<<<<<< HEAD
 			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			//some kind of output
 		}
+=======
+			ResponseEntity<Integer> response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
+//		} catch (RestClientResponseException | ResourceAccessException e) {
+//			//some kind of output
+//		}
+		System.out.println(response.getBody());
+>>>>>>> 24a9ba5a836c83b76e414c6cfa96e668f6b02eeb
 	}
 	
 	private void exitProgram() {
