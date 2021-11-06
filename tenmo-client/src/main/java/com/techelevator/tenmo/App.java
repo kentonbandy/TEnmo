@@ -188,12 +188,11 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		//HttpEntity<TransferPayment> entity = makeTransferPaymentEntity((transfer)); //this is for the first transfer entity below
 //		try {
 			//restTemplate.put(API_BASE_URL + "/transfer", entity); this does not seem right
-<<<<<<< HEAD
 			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			//some kind of output
 		}
-=======
+
 			ResponseEntity<Integer> response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
 //		} catch (RestClientResponseException | ResourceAccessException e) {
 //			//some kind of output
