@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.client.HttpStatusCodeException;
 
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
@@ -88,10 +89,14 @@ public class JdbcUserDao implements UserDao {
     public List<TransferHistory> getTransfersForUser(String user) {
         int accountId = getUserAccountIdByUsername(user);
         String sql = "select transfer_id, username, amount from transfers join accounts on account_from = account_id " +
-                "join users using(user_id) where account_to = ?;";
+                "join users using(user_id) " +
+                "join transfer_statuses using(transfer_status_id) " +
+                "where account_to = ? and transfer_status_desc = 'Approved';";
         SqlRowSet fromRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
         sql = "select transfer_id, username, amount from transfers join accounts on account_to = account_id " +
-                "join users using(user_id) where account_from = ?;";
+                "join users using(user_id) " +
+                "join transfer_statuses using(transfer_status_id) " +
+                "where account_from = ? and transfer_status_desc = 'Approved';";
         SqlRowSet toRowSet = jdbcTemplate.queryForRowSet(sql, accountId);
         List<TransferHistory> transfers = new ArrayList<>();
         while (fromRowSet.next()) {
@@ -186,6 +191,54 @@ public class JdbcUserDao implements UserDao {
         return pending;
     }
 
+    @Override
+    public int requestResponse(String username, int transferId, boolean isApproved)
+            throws NoSuchTransactionIdException, InsufficientFundsException, NotPendingException {
+
+        System.out.println(isApproved);
+        // check to see if transfers id exists and whether it is pending
+        String sql = "select count(*) from transfers join transfer_statuses using(transfer_status_id) " +
+                "where transfer_id = ?;";
+        Integer i = jdbcTemplate.queryForObject(sql, Integer.class, transferId);
+        if (i == null || i < 1) throw new NoSuchTransactionIdException();
+
+        sql = "select count(*) from transfers join transfer_statuses using(transfer_status_id) " +
+                "where transfer_id = ? and transfer_status_desc = 'Pending'";
+        i = jdbcTemplate.queryForObject(sql, Integer.class, transferId);
+        if (i == null || i < 1) throw new NotPendingException();
+
+        // if rejected, update only the transfers table
+        if (!isApproved) {
+            sql = "update transfers set transfer_status_id = " +
+                    "(select transfer_status_id from transfer_statuses where transfer_status_desc = 'Rejected') " +
+                    "where transfer_id = ?;";
+            jdbcTemplate.update(sql, transferId);
+        } else {
+            // verify the user has enough bucks
+            double userBalance = getBalanceByUsername(username);
+            if (userBalance < getAmountByTransferId(transferId)) throw new InsufficientFundsException();
+
+            String beginTransaction = "begin transaction";
+            String updateTransfers = "update transfers set transfer_status_id = " +
+                    "(select transfer_status_id from transfer_statuses where transfer_status_desc = 'Approved') " +
+                    "where transfer_id = ?;";
+            String updateFrom = "update accounts set balance = balance - (select amount from transfers where transfer_id = ?) " +
+                    "where account_id = (select account_from from transfers where transfer_id = ?);";
+            String updateTo = "update accounts set balance = balance + (select amount from transfers where transfer_id = ?) " +
+                    "where account_id = (select account_to from transfers where transfer_id = ?);";
+            String commitTransaction = "commit;";
+
+            jdbcTemplate.execute(beginTransaction);
+            jdbcTemplate.update(updateTransfers, transferId);
+            jdbcTemplate.update(updateFrom, transferId, transferId);
+            jdbcTemplate.update(updateTo, transferId, transferId);
+            jdbcTemplate.execute(commitTransaction);
+        }
+
+        return transferId;
+    }
+
+
     @ResponseStatus(HttpStatus.CREATED)
     public int createTransfer(TransferPayment transfer) throws InsufficientFundsException {
 
@@ -273,4 +326,10 @@ public class JdbcUserDao implements UserDao {
         user.setAuthorities("USER");
         return user;
     }
+
+    private double getAmountByTransferId(int id) {
+        String sql = "select amount from transfers where transfer_id = ?";
+        return jdbcTemplate.queryForObject(sql, Double.class, id);
+    }
+
 }

@@ -28,4 +28,6 @@ public interface UserDao {
     int createRequest(TransferPayment request);
 
     List<TransferHistory> getPendingTransfersForUser(String username);
+
+    int requestResponse(String username, int transferId, boolean isApproved) throws NoSuchTransactionIdException, InsufficientFundsException, NotPendingException;
 }

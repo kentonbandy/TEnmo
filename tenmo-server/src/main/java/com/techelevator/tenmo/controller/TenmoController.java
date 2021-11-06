@@ -1,6 +1,8 @@
 package com.techelevator.tenmo.controller;
 
 import com.techelevator.tenmo.dao.InsufficientFundsException;
+import com.techelevator.tenmo.dao.NoSuchTransactionIdException;
+import com.techelevator.tenmo.dao.NotPendingException;
 import com.techelevator.tenmo.dao.UserDao;
 import com.techelevator.tenmo.model.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,5 +54,11 @@ public class TenmoController {
     public List<TransferHistory> getPendingTransfersForUser(Principal user) {
         return dao.getPendingTransfersForUser(user.getName());
     }
+
+    @RequestMapping(path = "/requests/{id}", method = RequestMethod.PUT)
+    public int requestResponse(Principal user, @PathVariable int id, @RequestBody BigOlBoolean bool) throws NoSuchTransactionIdException, InsufficientFundsException, NotPendingException {
+        return dao.requestResponse(user.getName(), id, bool.isApproved());
+    }
+
 
 }
