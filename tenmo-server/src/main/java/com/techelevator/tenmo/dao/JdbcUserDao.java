@@ -145,6 +145,47 @@ public class JdbcUserDao implements UserDao {
         return transfer;
     }
 
+    @Override
+    public int createRequest(TransferPayment request) {
+        // verification
+
+        // database insert
+        double amount = request.getAmount();
+        int fromAccountId = getUserAccountIdByUserId(request.getFromUserId());
+        int toAccountId = getUserAccountIdByUserId(request.getToUserId());
+
+        String sql = "insert into transfers (transfer_type_id, transfer_status_id, account_from, account_to, amount) " +
+                "values (?,?,?,?,?) returning transfer_id;";
+        int transferId = jdbcTemplate.queryForObject(sql, Integer.class,
+                getTransferTypeId("Request"),
+                getTransferStatusId("Pending"),
+                fromAccountId,
+                toAccountId,
+                amount);
+
+        return transferId;
+    }
+
+    @Override
+    public List<TransferHistory> getPendingTransfersForUser(String username) {
+        String sql = "select transfer_id, to_user, amount from transfers " +
+                "join (select account_id as account_to, username as to_user from users join accounts using(user_id)) as to_table using(account_to) " +
+                "join (select account_id as account_from, username as from_user from users join accounts using(user_id)) as from_table using(account_from) " +
+                "join transfer_statuses using(transfer_status_id) " +
+                "where from_user = ? and transfer_status_desc = 'Pending';";
+        SqlRowSet rowSet = jdbcTemplate.queryForRowSet(sql, username);
+        List<TransferHistory> pending = new ArrayList<>();
+        while (rowSet.next()) {
+            TransferHistory t = new TransferHistory();
+            t.setTransferId(rowSet.getInt("transfer_id"));
+            t.setUsername(rowSet.getString("to_user"));
+            t.setAmount(rowSet.getDouble("amount"));
+            t.setFrom(false);
+            pending.add(t);
+        }
+        return pending;
+    }
+
     @ResponseStatus(HttpStatus.CREATED)
     public int createTransfer(TransferPayment transfer) throws InsufficientFundsException {
 

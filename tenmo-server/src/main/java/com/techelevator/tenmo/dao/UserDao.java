@@ -24,4 +24,8 @@ public interface UserDao {
     List<User> getAllUsers();
 
     TransferDetails getTransferDetails(int id);
+
+    int createRequest(TransferPayment request);
+
+    List<TransferHistory> getPendingTransfersForUser(String username);
 }

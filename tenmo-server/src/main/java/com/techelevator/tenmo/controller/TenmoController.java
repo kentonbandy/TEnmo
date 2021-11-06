@@ -43,4 +43,14 @@ public class TenmoController {
         return dao.getTransferDetails(id);
     }
 
+    @RequestMapping(path = "requests", method = RequestMethod.POST)
+    public int processRequest(@RequestBody TransferPayment request) {
+        return dao.createRequest(request);
+    }
+
+    @RequestMapping(path = "pending", method = RequestMethod.GET)
+    public List<TransferHistory> getPendingTransfersForUser(Principal user) {
+        return dao.getPendingTransfersForUser(user.getName());
+    }
+
 }
