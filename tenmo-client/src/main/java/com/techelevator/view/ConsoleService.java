@@ -141,7 +141,8 @@ public class ConsoleService {
 		System.out.println(clampToWidth("To:", width) + transferDetails.getTo());
 		System.out.println(clampToWidth("Type:", width) + transferDetails.getType());
 		System.out.println(clampToWidth("Status:", width) + transferDetails.getStatus());
-		System.out.println(clampToWidth("Amount:", width) + transferDetails.getAmount());
+		System.out.println(clampToWidth("Amount:", width) + "$" + MoneyMath.format(String.valueOf(transferDetails.getAmount())));
+		System.out.println();
 	}
 
 	public void displayPendingRequests(String pendingRequests) {
@@ -166,5 +167,10 @@ public class ConsoleService {
 
 	public void error(String message) {
 		System.out.println("!!! " + message + " !!!");
+	}
+
+	public void pressEnterToContinue() {
+		System.out.print("Press Enter to continue. ");
+		in.nextLine();
 	}
 }

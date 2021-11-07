@@ -127,6 +127,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		} catch (RestClientException e) {
 			console.error(e.getMessage());
 		}
+		console.pressEnterToContinue();
 	}
 
 	private	void viewUserList() {	// -- code added here
@@ -170,22 +171,23 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	}
 
-	private void sendBucks() {
-    	
+	private void sendBucks() {	// -code added here
+
+		// On failure: use console to display error message
 		TransferPayment transfer = new TransferPayment();
 
 		viewUserList();
 
-		Integer personFromId = console.getUserInputInteger("Enter ID of user you are sending money to (0 to cancel)");
+		Integer personToID = console.getUserInputInteger("Enter ID of user you are sending money to (0 to cancel)");
 
-		if(personFromId == 0) {
+		if(personToID == 0) {
 			return;
 		}
 
 		Double amountToTransfer = console.getUserInputDouble("Enter amount");
 
-		transfer.setFromUserId(personFromId);
-		transfer.setToUserId(currentUser.getUser().getId());
+		transfer.setFromUserId(currentUser.getUser().getId());
+		transfer.setToUserId(personToID);
 		transfer.setAmount(amountToTransfer);
 
 		ResponseEntity<Integer> response;
@@ -195,7 +197,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			System.out.println(e.getMessage());
 		}
-    }
+	}
 
 	private void requestBucks() {
 
@@ -217,14 +219,15 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 		ResponseEntity<Integer> response;
 		try {
-			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
+			response = restTemplate.exchange(API_BASE_URL + "requests", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
 
 			// display the request details to the user
 			console.transferSuccessMessage(true);
-
+			Integer transferId = response.getBody();
+			if (transferId != null) viewTransferDetails(transferId);
 
 		} catch (RestClientResponseException | ResourceAccessException e) {
-			System.out.println(e.getMessage());
+			console.error(e.getMessage());
 		}
 	}
 	
