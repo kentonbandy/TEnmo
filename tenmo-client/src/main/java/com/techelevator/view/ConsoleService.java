@@ -156,6 +156,15 @@ public class ConsoleService {
 	}
 
 	public TransferHistory pendingRequestsprompt(List<TransferHistory> requests) {
+
+		if (requests.size() == 0) {
+			longBar();
+			System.out.println("You have no pending transfer requests at this time.");
+			longBar();
+			pressEnterToContinue();
+			return null;
+		}
+
 		while (true) {
 			bar();
 			System.out.println("Pending Requests");
@@ -191,6 +200,10 @@ public class ConsoleService {
 			if (choice == 1 || choice == 2 || choice == 0) return choice;
 			error("Please choose one of the given options");
 		}
+	}
+
+	private void longBar() {
+		System.out.println("---------------------------------------------------");
 	}
 
     private void bar() {

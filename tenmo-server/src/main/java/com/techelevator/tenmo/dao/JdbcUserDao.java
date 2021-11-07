@@ -82,6 +82,7 @@ public class JdbcUserDao implements UserDao {
         return true;
     }
 
+    @Override
     public List<TransferHistory> getTransfersForUser(String user) {
         int accountId = getUserAccountIdByUsername(user);
         String sql = "select transfer_id, username, amount from transfers join accounts on account_from = account_id " +
@@ -151,10 +152,6 @@ public class JdbcUserDao implements UserDao {
 
     @Override
     public int createRequest(TransferPayment request, String username) throws NoSuchUserException, IllegalAccessError {
-
-        System.out.println("from: " + request.getFromUserId());
-        System.out.println(("to: " + request.getToUserId()));
-        System.out.println("username: " + username);
 
         // verification
         if (getUserId(username) != request.getToUserId()) throw new IllegalAccessError();
