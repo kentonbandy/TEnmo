@@ -3,7 +3,9 @@ package com.techelevator.view;
 
 import com.techelevator.tenmo.MoneyMath;
 import com.techelevator.tenmo.model.Transfer;
+import com.techelevator.tenmo.model.TransferDetails;
 import com.techelevator.tenmo.model.TransferHistory;
+import com.techelevator.tenmo.model.User;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -81,8 +83,35 @@ public class ConsoleService {
 		return result;
 	}
 
+	public Double getUserInputDouble(String prompt) {
+		Double result = null;
+		do {
+			out.print(prompt+": ");
+			out.flush();
+			String userInput = in.nextLine();
+			try {
+				result = Double.parseDouble(userInput);
+			} catch(NumberFormatException e) {
+				out.println(System.lineSeparator() + "*** " + userInput + " is not valid ***" + System.lineSeparator());
+			}
+		} while(result == null);
+		return result;
+	}
+
 	public void displayBalance(String balance) {
 		out.println("Your current account balance is: $" + balance);
+	}
+
+	public void displayUsers(List<User> users) {
+
+		bar();
+		System.out.println("Users");
+		System.out.println("ID		Name");
+		bar();
+		for (User user : users) {
+			System.out.println(users.toString());
+		}
+		bar();
 	}
 
     public void displayTransferHistory(List<TransferHistory> transfers) {
@@ -94,6 +123,15 @@ public class ConsoleService {
 		for (TransferHistory transfer : transfers) {
 			System.out.println(transfer.toString());
 		}
+		bar();
+	}
+
+	public void displayTransferDetails(TransferDetails transferDetails) {
+
+		bar();
+		System.out.println("Transfer Details");
+		bar();
+		System.out.println(transferDetails.toString());
 	}
 
 	public void displayPendingRequests(String pendingRequests) {
