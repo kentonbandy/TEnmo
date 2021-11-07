@@ -114,6 +114,7 @@ public class ConsoleService {
 		System.out.println("ID		Name");
 		bar();
 		for (User user : users) { // use clamper
+		for (User user : users) {
 			System.out.println(user.toString());
 		}
 		bar();
@@ -139,7 +140,13 @@ public class ConsoleService {
 		bar();
 		System.out.println("Transfer Details");
 		bar();
-		System.out.println(transferDetails.toString());
+		int width = 8;
+		System.out.println(clampToWidth("ID:", width) + transferDetails.getTransferId());
+		System.out.println(clampToWidth("From:", width) + transferDetails.getFrom());
+		System.out.println(clampToWidth("To:", width) + transferDetails.getTo());
+		System.out.println(clampToWidth("Type:", width) + transferDetails.getType());
+		System.out.println(clampToWidth("Status:", width) + transferDetails.getStatus());
+		System.out.println(clampToWidth("Amount:", width) + transferDetails.getAmount());
 	}
 
 	public void displayPendingRequests(String pendingRequests) {
@@ -154,5 +161,15 @@ public class ConsoleService {
 		int len = word.length();
 		if (len >= width) return len > 2 ? word.substring(0,len-2) + ".." : word.substring(0,len);
 		return StringUtils.rightPad(word, width, " ");
+	}
+
+	public void transferSuccessMessage(boolean isRequest) {
+		bar();
+		String type = isRequest ? "request" : "transfer";
+		System.out.println(StringUtils.capitalize(type) + " successful! Here are the details for your " + type + ":");
+	}
+
+	public void error(String message) {
+		System.out.println("!!! " + message + " !!!");
 	}
 }
