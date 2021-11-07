@@ -10,6 +10,7 @@ import jdk.swing.interop.SwingInterOpUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
@@ -114,21 +115,18 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			return;
 		}
 
-		//view transfer details
-		TransferDetails transferDetails = null;
-		try {
-			ResponseEntity<TransferDetails> response =
-					restTemplate.exchange(url + "/" + transferID, HttpMethod.GET, makeAuthEntity(), TransferDetails.class);
-			transferDetails = response.getBody();
-		} catch (RestClientResponseException ex) {
-			// handles exceptions thrown by rest template and contains status codes
-			// some kind of output
-		} catch (ResourceAccessException ex) {
-			// i/o error, ex: the server isn't running
-			//some kind of output
-		}
+		viewTransferDetails(transferID);
+	}
 
-		console.displayTransferDetails(transferDetails);
+	private void viewTransferDetails(int transferId) {
+		String url = API_BASE_URL + "transfers/" + transferId;
+		TransferDetails transfer = null;
+		try {
+			ResponseEntity<TransferDetails> response = restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), TransferDetails.class);
+			if (response != null) console.displayTransferDetails(response.getBody());
+		} catch (RestClientException e) {
+			console.error(e.getMessage());
+		}
 	}
 
 	private	void viewUserList() {	// -- code added here
@@ -172,23 +170,22 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	}
 
-	private void sendBucks() {	// -code added here
+	private void sendBucks() {
     	
-		// On failure: use console to display error message
 		TransferPayment transfer = new TransferPayment();
 
 		viewUserList();
 
-		Integer personToID = console.getUserInputInteger("Enter ID of user you are sending money to (0 to cancel)");
+		Integer personFromId = console.getUserInputInteger("Enter ID of user you are sending money to (0 to cancel)");
 
-		if(personToID == 0) {
+		if(personFromId == 0) {
 			return;
 		}
 
 		Double amountToTransfer = console.getUserInputDouble("Enter amount");
 
-		transfer.setFromUserId(currentUser.getUser().getId());
-		transfer.setToUserId(personToID);
+		transfer.setFromUserId(personFromId);
+		transfer.setToUserId(currentUser.getUser().getId());
 		transfer.setAmount(amountToTransfer);
 
 		ResponseEntity<Integer> response;
@@ -200,7 +197,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		}
     }
 
-	private void requestBucks() {	// --code added here
+	private void requestBucks() {
 
 		TransferPayment transfer = new TransferPayment();
 
@@ -221,7 +218,11 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		ResponseEntity<Integer> response;
 		try {
 			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
-			System.out.println(response.getBody());
+
+			// display the request details to the user
+			console.transferSuccessMessage(true);
+
+
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			System.out.println(e.getMessage());
 		}
