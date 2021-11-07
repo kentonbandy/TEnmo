@@ -177,22 +177,28 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 		viewUserList();
 
-		Integer personFromId = console.getUserInputInteger("Enter ID of user you are sending money to (0 to cancel)");
+		Integer personToId = console.getUserInputInteger("Enter ID of user you are sending money to (0 to cancel)");
 
-		if(personFromId == 0) {
+		if(personToId == 0) {
 			return;
 		}
 
 		Double amountToTransfer = console.getUserInputDouble("Enter amount");
 
-		transfer.setFromUserId(personFromId);
-		transfer.setToUserId(currentUser.getUser().getId());
+		transfer.setFromUserId(currentUser.getUser().getId());
+		transfer.setToUserId(personToId);
 		transfer.setAmount(amountToTransfer);
 
 		ResponseEntity<Integer> response;
 		try {
 			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
-			System.out.println(response.getBody());
+			System.out.print("Your transfer was successful.  Your transaction ID is ");
+			System.out.println(response.getBody() + ".");
+			Integer seeTransferDetails = console.getUserInputInteger("Press 1 to see your transfer details or 0 to continue");
+			if(seeTransferDetails == 1) {
+				viewTransferDetails(response.getBody());
+			}
+
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			System.out.println(e.getMessage());
 		}

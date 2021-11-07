@@ -114,7 +114,6 @@ public class ConsoleService {
 		System.out.println("ID		Name");
 		bar();
 		for (User user : users) { // use clamper
-		for (User user : users) {
 			System.out.println(user.toString());
 		}
 		bar();
@@ -130,7 +129,9 @@ public class ConsoleService {
 			System.out.print(clampToWidth(String.valueOf(transfer.getTransferId()), 10));
 			System.out.print(transfer.isFrom() ? clampToWidth("From:", 6) : clampToWidth("To:", 6));
 			System.out.print(clampToWidth(transfer.getUsername(), 16));
-			System.out.println(transfer.getAmount());
+			double num = transfer.getAmount();
+			String converted = String.valueOf(num);
+			System.out.println("$" + MoneyMath.format(converted));
 		}
 		bar();
 	}
@@ -146,7 +147,10 @@ public class ConsoleService {
 		System.out.println(clampToWidth("To:", width) + transferDetails.getTo());
 		System.out.println(clampToWidth("Type:", width) + transferDetails.getType());
 		System.out.println(clampToWidth("Status:", width) + transferDetails.getStatus());
-		System.out.println(clampToWidth("Amount:", width) + transferDetails.getAmount());
+		double num = transferDetails.getAmount();
+		String converted = String.valueOf(num);
+		System.out.println(clampToWidth("Amount:", width) + "$" + MoneyMath.format(converted));
+		pressEnterToContinue();
 	}
 
 	public void displayPendingRequests(String pendingRequests) {
