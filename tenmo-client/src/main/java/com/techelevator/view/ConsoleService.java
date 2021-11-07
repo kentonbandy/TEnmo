@@ -207,12 +207,22 @@ public class ConsoleService {
 		return StringUtils.rightPad(word, width, " ");
 	}
 
-	public boolean transferSuccess(int transactionId, boolean isRequest) {
+	public boolean transferSuccess(int transferId, boolean isRequest) {
 		bar();
 		String type = isRequest ? "request" : "transfer";
-		System.out.println(StringUtils.capitalize(type) + " successful! Your transaction ID is " + transactionId + ".");
+		System.out.println(StringUtils.capitalize(type) + " successful! Your transfer ID is " + transferId + ".");
+		return viewTransferDetailsPrompt();
+	}
+
+	public boolean updateSuccess(int transferId, boolean isApproved) {
+		bar();
+		System.out.println("Update successful! You've " + (isApproved ? "approved" : "rejected") + " transfer ID: " + transferId + ".");
+		return viewTransferDetailsPrompt();
+	}
+
+	private boolean viewTransferDetailsPrompt() {
 		while (true) {
-			String input = getUserInput("Would you like to view the " + type + " details? (y/n): ").toLowerCase();
+			String input = getUserInput("Would you like to view the transfer details? (y/n): ").toLowerCase();
 			if (input.equals("y")) return true;
 			else if (input.equals("n")) return false;
 			else {

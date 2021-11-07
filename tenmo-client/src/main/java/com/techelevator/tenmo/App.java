@@ -171,8 +171,21 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			TransferHistory transfer = console.pendingRequestsprompt(pendingRequests);
 			if (transfer == null) return;
 			int choice = console.approveOrReject(transfer);
-			if (choice == 1) ; // PUT to /requests/{id}
-			else if (choice == 2) ; // PUT to /requests/{id}
+			if (choice == 0) return;
+			requestResponse(transfer.getTransferId(), choice == 1);
+		}
+	}
+
+	private void requestResponse(int transferId, boolean isApproved) {
+    	String url = API_BASE_URL + "requests/" + transferId;
+    	BigOlBoolean approval = new BigOlBoolean();
+    	approval.setApproved(isApproved);
+    	try {
+			ResponseEntity<Integer> response =
+					restTemplate.exchange(url, HttpMethod.PUT, makeAuthEntity(approval), Integer.class);
+			if (console.updateSuccess(transferId, isApproved)) viewTransferDetails(transferId);
+		} catch (RestClientResponseException | ResourceAccessException e) {
+    		console.error(e.getMessage());
 		}
 	}
 
@@ -201,7 +214,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			Integer transferId = response.getBody();
 			if (transferId != null && console.transferSuccess(transferId, false)) viewTransferDetails(transferId);
 		} catch (RestClientResponseException | ResourceAccessException e) {
-			System.out.println(e.getMessage());
+			console.error(e.getMessage());
 		}
 	}
 
@@ -303,6 +316,13 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setBearerAuth(currentUser.getToken());
 		return new HttpEntity<>(headers);
+	}
+
+	private HttpEntity<BigOlBoolean> makeAuthEntity(BigOlBoolean bool) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setBearerAuth(currentUser.getToken());
+		return new HttpEntity<>(bool, headers);
 	}
 
 	/**
