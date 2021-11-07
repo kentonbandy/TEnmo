@@ -4,10 +4,11 @@ package com.techelevator.view;
 import com.techelevator.tenmo.MoneyMath;
 import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.TransferHistory;
-
+import org.apache.commons.lang3.StringUtils;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.sql.SQLOutput;
 import java.util.List;
 import java.util.Scanner;
 
@@ -89,10 +90,13 @@ public class ConsoleService {
 
 		bar();
 		System.out.println("Transfers");
-		System.out.println("ID      From/To            Amount");
+		System.out.println(clampToWidth("ID", 10) + clampToWidth("From/To", 24) + clampToWidth("Amount", 10));
 		bar();
 		for (TransferHistory transfer : transfers) {
-			System.out.println(transfer.toString());
+			System.out.print(clampToWidth(String.valueOf(transfer.getTransferId()), 10));
+			System.out.print(transfer.isFrom() ? clampToWidth("From:", 6) : clampToWidth("To:", 6));
+			System.out.print(clampToWidth(transfer.getUsername(), 18));
+			System.out.println(transfer.getAmount());
 		}
 	}
 
@@ -102,5 +106,11 @@ public class ConsoleService {
 
     private void bar() {
 		System.out.println("------------------------------------");
+	}
+
+	private String clampToWidth(String word, int width) {
+		int len = word.length();
+		if (len >= width) return len > 2 ? word.substring(0,len-2) + ".." : word.substring(0,len);
+		return StringUtils.rightPad(word, width, " ");
 	}
 }
