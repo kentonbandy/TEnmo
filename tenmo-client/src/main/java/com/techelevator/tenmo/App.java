@@ -5,6 +5,7 @@ import com.techelevator.tenmo.model.*;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.AuthenticationServiceException;
 import com.techelevator.view.ConsoleService;
+import io.cucumber.java.sl.In;
 import jdk.swing.interop.SwingInterOpUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
@@ -81,16 +82,16 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		}
 	}
 
-	private void viewCurrentBalance() {		// -- Denny code added
-		String url = API_BASE_URL + "/balance";
+	private void viewCurrentBalance() {
+		String url = API_BASE_URL + "balance";
 
 		ResponseEntity<String> balance = restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), String.class);
 		console.displayBalance(balance.getBody());
 	}
 
-	private void viewTransferHistory() {	// -- Denny code added
-    	//show list of transfers from transfer table
-		String url = API_BASE_URL + "/transfers";
+	private void viewTransferHistory() {	// -- code added here
+     	//show list of transfers from transfer table
+		String url = API_BASE_URL + "transfers";
 		List<TransferHistory> transfers = null;
 
 		try {
@@ -106,11 +107,53 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			}
 
 		console.displayTransferHistory(transfers);
+
+		Integer transferID = console.getUserInputInteger("Please enter transfer ID to view details (0 to cancel)");
+
+		if(transferID == 0) {
+			return;
+		}
+
+		//view transfer details
+		TransferDetails transferDetails = null;
+		try {
+			ResponseEntity<TransferDetails> response =
+					restTemplate.exchange(url + "/" + transferID, HttpMethod.GET, makeAuthEntity(), TransferDetails.class);
+			transferDetails = response.getBody();
+		} catch (RestClientResponseException ex) {
+			// handles exceptions thrown by rest template and contains status codes
+			// some kind of output
+		} catch (ResourceAccessException ex) {
+			// i/o error, ex: the server isn't running
+			//some kind of output
+		}
+
+		console.displayTransferDetails(transferDetails);
+	}
+
+	private	void viewUserList() {	// -- code added here
+    	//show list of users from user table
+		String url = API_BASE_URL + "users";
+		List<User> users = null;
+
+		try {
+			ResponseEntity<List<User>> response =
+					restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), new ParameterizedTypeReference<List<User>>(){});
+			users = response.getBody();
+		} catch (RestClientResponseException ex) {
+			// handles exceptions thrown by rest template and contains status codes
+			// some kind of output
+		} catch (ResourceAccessException ex) {
+			// i/o error, ex: the server isn't running
+			//some kind of output
+		}
+
+		console.displayUsers(users);
 	}
 
 	private void viewPendingRequests() {	// -- Denny code added
 		//show list of transfers from transfer table with pending status
-		String url = API_BASE_URL + "/transfers/pending";
+		String url = API_BASE_URL + "transfers/pending";
 		List<TransferHistory> pendingTransfers = null;
 
 		try {
@@ -129,31 +172,25 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	}
 
-	private void sendBucks() {	// --Denny code added
-
-		// Display users first (mirror readme)
-		// Use console for output and input
-		// On success: use console to display transfer details (use /transfers/{id} endpoint)
+	private void sendBucks() {	// -code added here
+    	
 		// On failure: use console to display error message
-
-		Scanner scanner = new Scanner(System.in);
 		TransferPayment transfer = new TransferPayment();
 
-		System.out.println("Please enter the user id of the person you wish to send money to: ");
-		String personTo = scanner.nextLine();
-		int personToID = Integer.parseInt(personTo);
+		viewUserList();
 
-		System.out.println("Please enter the amount you wish to transfer: ");
-		String stringAmountToTransfer = scanner.nextLine();
-		double amountToTransfer = Double.parseDouble(stringAmountToTransfer);
+		Integer personToID = console.getUserInputInteger("Enter ID of user you are sending money to (0 to cancel)");
+
+		if(personToID == 0) {
+			return;
+		}
+
+		Double amountToTransfer = console.getUserInputDouble("Enter amount");
 
 		transfer.setFromUserId(currentUser.getUser().getId());
 		transfer.setToUserId(personToID);
 		transfer.setAmount(amountToTransfer);
 
-		System.out.println("From " + transfer.getFromUserId());
-		System.out.println("To " + transfer.getToUserId());
-		System.out.println("Amount " + transfer.getAmount());
 		ResponseEntity<Integer> response;
 		try {
 			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
@@ -161,37 +198,33 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			System.out.println(e.getMessage());
 		}
+    }
 
-	}
+	private void requestBucks() {	// --code added here
 
-	private void requestBucks() {	// --Denny code added
-		Scanner scanner = new Scanner(System.in);
 		TransferPayment transfer = new TransferPayment();
 
-		System.out.println("Please enter the user id of the person you wish to request money from: ");
-		String personFrom = scanner.nextLine();
-		int personFromID = Integer.parseInt(personFrom);
+		viewUserList();
 
-		System.out.println("Please enter the amount you wish to transfer: ");
-		String stringAmountToTransfer = scanner.nextLine();
-		double amountToTransfer = Double.parseDouble(stringAmountToTransfer);
+		Integer personFromID = console.getUserInputInteger("Enter ID of user you are requesting from (0 to cancel)");
+
+		if(personFromID == 0) {
+			return;
+		}
+
+		Double amountToTransfer = console.getUserInputDouble("Enter amount");
 
 		transfer.setToUserId(currentUser.getUser().getId());
 		transfer.setFromUserId(personFromID);
 		transfer.setAmount(amountToTransfer);
 
-		System.out.println("From " + transfer.getFromUserId());
-		System.out.println("To" + transfer.getToUserId());
-		System.out.println("Amount" + transfer.getAmount());
-
-		//HttpEntity<TransferPayment> entity = makeTransferPaymentEntity((transfer)); //this is for the first transfer entity below
-//		try {
-			//restTemplate.put(API_BASE_URL + "/transfer", entity); this does not seem right
-			ResponseEntity<Integer> response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
-//		} catch (RestClientResponseException | ResourceAccessException e) {
-//			//some kind of output
-//		}
-		System.out.println(response.getBody());
+		ResponseEntity<Integer> response;
+		try {
+			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
+			System.out.println(response.getBody());
+		} catch (RestClientResponseException | ResourceAccessException e) {
+			System.out.println(e.getMessage());
+		}
 	}
 	
 	private void exitProgram() {
@@ -255,7 +288,6 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 	}
 
 	/**
-	 * Denny Code added
 	 * can be used with get and delete requests
 	 * makes http headers and bearer auth
 	 * @return http headers
@@ -267,8 +299,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 	}
 
 	/**
-	 * Denny code added
-	 * post / put entity for auth as well
+	 * post / put entity for Transfer Payment
 	 */
 	private HttpEntity<TransferPayment> makeTransferPaymentEntity(TransferPayment transfer) {
 		HttpHeaders headers = new HttpHeaders();
