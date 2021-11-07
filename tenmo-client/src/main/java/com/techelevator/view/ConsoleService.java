@@ -6,11 +6,11 @@ import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.TransferDetails;
 import com.techelevator.tenmo.model.TransferHistory;
 import com.techelevator.tenmo.model.User;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.sql.SQLOutput;
 import java.util.List;
 import java.util.Scanner;
 
@@ -119,12 +119,12 @@ public class ConsoleService {
 
 		bar();
 		System.out.println("Transfers");
-		System.out.println(clampToWidth("ID", 10) + clampToWidth("From/To", 24) + clampToWidth("Amount", 10));
+		System.out.println(clampToWidth("ID", 10) + clampToWidth("From/To", 22) + clampToWidth("Amount", 10));
 		bar();
 		for (TransferHistory transfer : transfers) {
 			System.out.print(clampToWidth(String.valueOf(transfer.getTransferId()), 10));
 			System.out.print(transfer.isFrom() ? clampToWidth("From:", 6) : clampToWidth("To:", 6));
-			System.out.print(clampToWidth(transfer.getUsername(), 18));
+			System.out.print(clampToWidth(transfer.getUsername(), 16));
 			System.out.println(transfer.getAmount());
 		}
 		bar();
