@@ -1,12 +1,22 @@
 package com.techelevator.tenmo.model;
 
+import org.springframework.format.annotation.NumberFormat;
+
+import javax.validation.constraints.NotEmpty;
+
 public class Transfer {
 
+    @NumberFormat
     private int id;
+    @NumberFormat
     private int from;
+    @NumberFormat
     private int to;
+    @NumberFormat
     private double amount;
+    @NotEmpty
     private String type;
+    @NotEmpty
     private String status;
 
     public int getId() {

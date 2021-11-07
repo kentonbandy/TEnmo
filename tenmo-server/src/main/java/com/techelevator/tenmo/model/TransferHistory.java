@@ -1,5 +1,10 @@
 package com.techelevator.tenmo.model;
 
+import org.springframework.format.annotation.NumberFormat;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
 public class TransferHistory {
 
     private int transferId;
