@@ -193,13 +193,8 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		ResponseEntity<Integer> response;
 		try {
 			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
-			System.out.print("Your transfer was successful.  Your transaction ID is ");
-			System.out.println(response.getBody() + ".");
-			Integer seeTransferDetails = console.getUserInputInteger("Press 1 to see your transfer details or 0 to continue");
-			if(seeTransferDetails == 1) {
-				viewTransferDetails(response.getBody());
-			}
-
+			Integer transferId = response.getBody();
+			if (transferId != null && console.transferSuccess(transferId, false)) viewTransferDetails(transferId);
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			System.out.println(e.getMessage());
 		}
@@ -226,12 +221,10 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		ResponseEntity<Integer> response;
 		try {
 			response = restTemplate.exchange(API_BASE_URL + "requests", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
+			Integer transferId = response.getBody();
 
 			// display the request details to the user
-			console.transferSuccessMessage(true);
-			Integer transferId = response.getBody();
-			if (transferId != null) viewTransferDetails(transferId);
-
+			if (transferId != null && console.transferSuccess(transferId, true)) viewTransferDetails(transferId);
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			console.error(e.getMessage());
 		}

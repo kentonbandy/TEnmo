@@ -53,7 +53,7 @@ public class ConsoleService {
 
 	public void pressEnterToContinue() {
 		System.out.println();
-		System.out.println("Press enter to continue :");
+		System.out.print("Press enter to continue :");
 		in.nextLine();
 	}
 
@@ -167,10 +167,18 @@ public class ConsoleService {
 		return StringUtils.rightPad(word, width, " ");
 	}
 
-	public void transferSuccessMessage(boolean isRequest) {
+	public boolean transferSuccess(int transactionId, boolean isRequest) {
 		bar();
 		String type = isRequest ? "request" : "transfer";
-		System.out.println(StringUtils.capitalize(type) + " successful! Here are the details for your " + type + ":");
+		System.out.println(StringUtils.capitalize(type) + " successful! Your transaction ID is " + transactionId + ".");
+		while (true) {
+			String input = getUserInput("Would you like to view the " + type + " details? (y/n): ").toLowerCase();
+			if (input.equals("y")) return true;
+			else if (input.equals("n")) return false;
+			else {
+				error("Please enter y or n");
+			}
+		}
 	}
 
 	public void error(String message) {
