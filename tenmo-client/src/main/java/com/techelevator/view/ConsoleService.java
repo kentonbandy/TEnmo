@@ -51,7 +51,11 @@ public class ConsoleService {
 		return choice;
 	}
 
-
+	public void pressEnterToContinue() {
+		System.out.println();
+		System.out.println("Press enter to continue :");
+		String userInput = in.nextLine();
+	}
 
 	private void displayMenuOptions(Object[] options) {
 		out.println();
@@ -100,7 +104,7 @@ public class ConsoleService {
 	}
 
 	public void displayBalance(String balance) {
-		out.println("Your current account balance is: $" + balance);
+		out.println("Your current account balance is: $" + MoneyMath.format(balance));
 	}
 
 	public void displayUsers(List<User> users) {
@@ -109,8 +113,8 @@ public class ConsoleService {
 		System.out.println("Users");
 		System.out.println("ID		Name");
 		bar();
-		for (User user : users) {
-			System.out.println(users.toString());
+		for (User user : users) { // use clamper
+			System.out.println(user.toString());
 		}
 		bar();
 	}

@@ -87,6 +87,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 		ResponseEntity<String> balance = restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), String.class);
 		console.displayBalance(balance.getBody());
+		console.pressEnterToContinue();
 	}
 
 	private void viewTransferHistory() {	// -- code added here
