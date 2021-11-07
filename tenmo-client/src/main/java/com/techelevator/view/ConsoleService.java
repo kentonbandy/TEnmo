@@ -51,7 +51,11 @@ public class ConsoleService {
 		return choice;
 	}
 
-
+	public void pressEnterToContinue() {
+		System.out.println();
+		System.out.println("Press enter to continue :");
+		String userInput = in.nextLine();
+	}
 
 	private void displayMenuOptions(Object[] options) {
 		out.println();
@@ -100,7 +104,7 @@ public class ConsoleService {
 	}
 
 	public void displayBalance(String balance) {
-		out.println("Your current account balance is: $" + balance);
+		out.println("Your current account balance is: $" + MoneyMath.format(balance));
 	}
 
 	public void displayUsers(List<User> users) {
@@ -109,7 +113,7 @@ public class ConsoleService {
 		System.out.println("Users");
 		System.out.println("ID		Name");
 		bar();
-		for (User user : users) {
+		for (User user : users) { // use clamper
 			System.out.println(user.toString());
 		}
 		bar();
@@ -125,7 +129,9 @@ public class ConsoleService {
 			System.out.print(clampToWidth(String.valueOf(transfer.getTransferId()), 10));
 			System.out.print(transfer.isFrom() ? clampToWidth("From:", 6) : clampToWidth("To:", 6));
 			System.out.print(clampToWidth(transfer.getUsername(), 16));
-			System.out.println(transfer.getAmount());
+			double num = transfer.getAmount();
+			String converted = String.valueOf(num);
+			System.out.println("$" + MoneyMath.format(converted));
 		}
 		bar();
 	}
@@ -141,8 +147,10 @@ public class ConsoleService {
 		System.out.println(clampToWidth("To:", width) + transferDetails.getTo());
 		System.out.println(clampToWidth("Type:", width) + transferDetails.getType());
 		System.out.println(clampToWidth("Status:", width) + transferDetails.getStatus());
-		System.out.println(clampToWidth("Amount:", width) + "$" + MoneyMath.format(String.valueOf(transferDetails.getAmount())));
-		System.out.println();
+		double num = transferDetails.getAmount();
+		String converted = String.valueOf(num);
+		System.out.println(clampToWidth("Amount:", width) + "$" + MoneyMath.format(converted));
+		pressEnterToContinue();
 	}
 
 	public void displayPendingRequests(String pendingRequests) {
