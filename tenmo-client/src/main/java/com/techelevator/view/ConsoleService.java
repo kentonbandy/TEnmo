@@ -54,7 +54,7 @@ public class ConsoleService {
 	public void pressEnterToContinue() {
 		System.out.println();
 		System.out.println("Press enter to continue :");
-		String userInput = in.nextLine();
+		in.nextLine();
 	}
 
 	private void displayMenuOptions(Object[] options) {
@@ -175,10 +175,5 @@ public class ConsoleService {
 
 	public void error(String message) {
 		System.out.println("!!! " + message + " !!!");
-	}
-
-	public void pressEnterToContinue() {
-		System.out.print("Press Enter to continue. ");
-		in.nextLine();
 	}
 }

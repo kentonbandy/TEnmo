@@ -128,7 +128,6 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		} catch (RestClientException e) {
 			console.error(e.getMessage());
 		}
-		console.pressEnterToContinue();
 	}
 
 	private	void viewUserList() {	// -- code added here
