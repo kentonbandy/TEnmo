@@ -152,13 +152,13 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	private void viewPendingRequests() {	// -- Denny code added
 		//show list of transfers from transfer table with pending status
-		String url = API_BASE_URL + "transfers/pending";
-		List<TransferHistory> pendingTransfers = null;
+		String url = API_BASE_URL + "pending";
+		List<TransferHistory> pendingRequests = null;
 
 		try {
 			ResponseEntity<List<TransferHistory>> response =
 					restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), new ParameterizedTypeReference<List<TransferHistory>>(){});
-					pendingTransfers = response.getBody();
+					pendingRequests = response.getBody();
 		} catch (RestClientResponseException ex) {
 			// handles exceptions thrown by rest template and contains status codes
 			// some kind of output
@@ -167,8 +167,13 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			//some kind of output
 		}
 
-		console.displayTransferHistory(pendingTransfers);
-
+		if (pendingRequests != null) {
+			TransferHistory transfer = console.pendingRequestsprompt(pendingRequests);
+			if (transfer == null) return;
+			int choice = console.approveOrReject(transfer);
+			if (choice == 1) ; // PUT to /requests/{id}
+			else if (choice == 2) ; // PUT to /requests/{id}
+		}
 	}
 
 	private void sendBucks() {	// -code added here
@@ -223,7 +228,6 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			response = restTemplate.exchange(API_BASE_URL + "requests", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
 			Integer transferId = response.getBody();
 
-			// display the request details to the user
 			if (transferId != null && console.transferSuccess(transferId, true)) viewTransferDetails(transferId);
 		} catch (RestClientResponseException | ResourceAccessException e) {
 			console.error(e.getMessage());

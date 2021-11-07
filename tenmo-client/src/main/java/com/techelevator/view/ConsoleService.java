@@ -11,7 +11,9 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class ConsoleService {
@@ -123,7 +125,7 @@ public class ConsoleService {
 
 		bar();
 		System.out.println("Transfers");
-		System.out.println(clampToWidth("ID", 10) + clampToWidth("From/To", 22) + clampToWidth("Amount", 10));
+		System.out.println(clampToWidth("ID", 10) + clampToWidth("From/To", 22) + "Amount");
 		bar();
 		for (TransferHistory transfer : transfers) {
 			System.out.print(clampToWidth(String.valueOf(transfer.getTransferId()), 10));
@@ -153,12 +155,50 @@ public class ConsoleService {
 		pressEnterToContinue();
 	}
 
-	public void displayPendingRequests(String pendingRequests) {
-		System.out.println(pendingRequests);
+	public TransferHistory pendingRequestsprompt(List<TransferHistory> requests) {
+		while (true) {
+			bar();
+			System.out.println("Pending Requests");
+			System.out.println(clampToWidth("ID", 8) + clampToWidth("From", 16) + "Amount");
+			bar();
+			Map<Integer,TransferHistory> requestMap = new HashMap<>();
+			for (TransferHistory request : requests) {
+				System.out.print(clampToWidth(String.valueOf(request.getTransferId()), 8));
+				System.out.print(clampToWidth(request.getUsername(), 16));
+				System.out.println(MoneyMath.format(String.valueOf(request.getAmount())));
+				requestMap.put(request.getTransferId(), request);
+			}
+			bar();
+
+			int choice = getUserInputInteger("Please enter transfer ID to approve/reject (0 to cancel)");
+			if (choice == 0) return null;
+			if (requestMap.containsKey(choice)) return requestMap.get(choice);
+			error("Please provide a valid transfer ID");
+		}
+	}
+
+
+	public int approveOrReject(TransferHistory transfer) {
+		while (true) {
+			bar();
+			System.out.println(transfer.getUsername() + " is requesting $" + MoneyMath.format(String.valueOf(transfer.getAmount())));
+			bar();
+			System.out.println("1: Approve");
+			System.out.println("2: Reject");
+			System.out.println("0: Take no action");
+			shortBar();
+			int choice = getUserInputInteger("Please choose an option");
+			if (choice == 1 || choice == 2 || choice == 0) return choice;
+			error("Please choose one of the given options");
+		}
 	}
 
     private void bar() {
 		System.out.println("------------------------------------");
+	}
+
+	private void shortBar() {
+		System.out.println("---------");
 	}
 
 	private String clampToWidth(String word, int width) {
