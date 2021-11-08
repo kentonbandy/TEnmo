@@ -88,11 +88,9 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 		ResponseEntity<String> balance = restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), String.class);
 		console.displayBalance(balance.getBody());
-		console.pressEnterToContinue();
 	}
 
-	private void viewTransferHistory() {	// -- code added here
-     	//show list of transfers from transfer table
+	private void viewTransferHistory() {	
 		String url = API_BASE_URL + "transfers";
 		List<TransferHistory> transfers = null;
 
@@ -100,15 +98,12 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			ResponseEntity<List<TransferHistory>> response =
 					restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), new ParameterizedTypeReference<List<TransferHistory>>(){});
 			transfers = response.getBody();
-		} catch (RestClientResponseException ex) {
-				// handles exceptions thrown by rest template and contains status codes
-				console.error(ex.getMessage());
-			} catch (ResourceAccessException ex) {
-				// i/o error, ex: the server isn't running
+		} catch (RestClientResponseException | ResourceAccessException ex) {
 				console.error(ex.getMessage());
 			}
 
-		if (console.displayTransferHistory(transfers)) {
+		// Only ask the user to provide input if the transfer history is not empty
+		if (transfers != null && console.displayTransferHistory(transfers)) {
 			Integer transferID = console.getUserInputInteger("Please enter transfer ID to view details (0 to cancel)");
 
 			if(transferID == 0) {
@@ -130,7 +125,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		}
 	}
 
-	private	void viewUserList() {	// -- code added here
+	private	void viewUserList() {
     	//show list of users from user table
 		String url = API_BASE_URL + "users";
 		List<User> users = null;
@@ -139,18 +134,15 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			ResponseEntity<List<User>> response =
 					restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), new ParameterizedTypeReference<List<User>>(){});
 			users = response.getBody();
-		} catch (RestClientResponseException ex) {
-			// handles exceptions thrown by rest template and contains status codes
-			console.error(ex.getMessage());
-		} catch (ResourceAccessException ex) {
-			// i/o error, ex: the server isn't running
+		} catch (RestClientResponseException | ResourceAccessException ex) {
+			// handles exceptions thrown by rest template and i/o error, ex: the server isn't running
 			console.error(ex.getMessage());
 		}
 
 		console.displayUsers(users);
 	}
 
-	private void viewPendingRequests() {	// -- code added here
+	private void viewPendingRequests() {
 		//show list of transfers from transfer table with pending status
 		String url = API_BASE_URL + "pending";
 		List<TransferHistory> pendingRequests = null;

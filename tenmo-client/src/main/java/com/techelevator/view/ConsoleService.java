@@ -107,6 +107,7 @@ public class ConsoleService {
 
 	public void displayBalance(String balance) {
 		out.println("Your current account balance is: $" + MoneyMath.format(balance));
+		pressEnterToContinue();
 	}
 
 	public void displayUsers(List<User> users) {
@@ -183,7 +184,7 @@ public class ConsoleService {
 			for (TransferHistory request : requests) {
 				System.out.print(clampToWidth(String.valueOf(request.getTransferId()), 8, true));
 				System.out.print(clampToWidth(request.getUsername(), 16, true));
-				System.out.println(clampToWidth(MoneyMath.format(String.valueOf(request.getAmount())), 9, false));
+				System.out.println(clampToWidth("$" + MoneyMath.format(String.valueOf(request.getAmount())), 9, false));
 				requestMap.put(request.getTransferId(), request);
 			}
 			bar();
