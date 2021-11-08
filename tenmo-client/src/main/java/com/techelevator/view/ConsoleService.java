@@ -121,21 +121,30 @@ public class ConsoleService {
 		bar();
 	}
 
-    public void displayTransferHistory(List<TransferHistory> transfers) {
+    public boolean displayTransferHistory(List<TransferHistory> transfers) {
+
+		if (transfers.size() == 0) {
+			bar();
+			System.out.println("You have no past transfers.");
+			bar();
+			pressEnterToContinue();
+			return false;
+		}
 
 		bar();
 		System.out.println("Transfers");
-		System.out.println(clampToWidth("ID", 10) + clampToWidth("From/To", 22) + "Amount");
+		System.out.println(clampToWidth("ID", 10, true) + clampToWidth("From/To", 22, true) + clampToWidth("Amount", 9, false));
 		bar();
 		for (TransferHistory transfer : transfers) {
-			System.out.print(clampToWidth(String.valueOf(transfer.getTransferId()), 10));
-			System.out.print(transfer.isFrom() ? clampToWidth("From:", 6) : clampToWidth("To:", 6));
-			System.out.print(clampToWidth(transfer.getUsername(), 16));
+			System.out.print(clampToWidth(String.valueOf(transfer.getTransferId()), 10, true));
+			System.out.print(transfer.isFrom() ? clampToWidth("From:", 6, true) : clampToWidth("To:", 6, true));
+			System.out.print(clampToWidth(transfer.getUsername(), 16, true));
 			double num = transfer.getAmount();
 			String converted = String.valueOf(num);
-			System.out.println("$" + MoneyMath.format(converted));
+			System.out.println(clampToWidth("$" + MoneyMath.format(converted), 9, false));
 		}
 		bar();
+		return true;
 	}
 
 	public void displayTransferDetails(TransferDetails transferDetails) {
@@ -144,14 +153,14 @@ public class ConsoleService {
 		System.out.println("Transfer Details");
 		bar();
 		int width = 8;
-		System.out.println(clampToWidth("ID:", width) + transferDetails.getTransferId());
-		System.out.println(clampToWidth("From:", width) + transferDetails.getFrom());
-		System.out.println(clampToWidth("To:", width) + transferDetails.getTo());
-		System.out.println(clampToWidth("Type:", width) + transferDetails.getType());
-		System.out.println(clampToWidth("Status:", width) + transferDetails.getStatus());
+		System.out.println(clampToWidth("ID:", width, true) + transferDetails.getTransferId());
+		System.out.println(clampToWidth("From:", width, true) + transferDetails.getFrom());
+		System.out.println(clampToWidth("To:", width, true) + transferDetails.getTo());
+		System.out.println(clampToWidth("Type:", width, true) + transferDetails.getType());
+		System.out.println(clampToWidth("Status:", width, true) + transferDetails.getStatus());
 		double num = transferDetails.getAmount();
 		String converted = String.valueOf(num);
-		System.out.println(clampToWidth("Amount:", width) + "$" + MoneyMath.format(converted));
+		System.out.println(clampToWidth("Amount:", width, true) + "$" + MoneyMath.format(converted));
 		pressEnterToContinue();
 	}
 
@@ -168,13 +177,13 @@ public class ConsoleService {
 		while (true) {
 			bar();
 			System.out.println("Pending Requests");
-			System.out.println(clampToWidth("ID", 8) + clampToWidth("From", 16) + "Amount");
+			System.out.println(clampToWidth("ID", 8, true) + clampToWidth("From", 16, true) + clampToWidth("Amount", 9, false));
 			bar();
 			Map<Integer,TransferHistory> requestMap = new HashMap<>();
 			for (TransferHistory request : requests) {
-				System.out.print(clampToWidth(String.valueOf(request.getTransferId()), 8));
-				System.out.print(clampToWidth(request.getUsername(), 16));
-				System.out.println(MoneyMath.format(String.valueOf(request.getAmount())));
+				System.out.print(clampToWidth(String.valueOf(request.getTransferId()), 8, true));
+				System.out.print(clampToWidth(request.getUsername(), 16, true));
+				System.out.println(clampToWidth(MoneyMath.format(String.valueOf(request.getAmount())), 9, false));
 				requestMap.put(request.getTransferId(), request);
 			}
 			bar();
@@ -207,17 +216,17 @@ public class ConsoleService {
 	}
 
     private void bar() {
-		System.out.println("------------------------------------");
+		System.out.println("-----------------------------------------");
 	}
 
 	private void shortBar() {
 		System.out.println("---------");
 	}
 
-	private String clampToWidth(String word, int width) {
+	private String clampToWidth(String word, int width, boolean toLeft) {
 		int len = word.length();
-		if (len >= width) return len > 2 ? word.substring(0,len-2) + ".." : word.substring(0,len);
-		return StringUtils.rightPad(word, width, " ");
+		if (len >= width) return len > 2 ? word.substring(0,width-3) + ".. " : word.substring(0,len);
+		return toLeft ? StringUtils.rightPad(word, width, " ") : StringUtils.leftPad(word, width, " ");
 	}
 
 	public boolean transferSuccess(int transferId, boolean isRequest) {

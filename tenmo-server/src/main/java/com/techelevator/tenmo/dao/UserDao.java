@@ -29,4 +29,8 @@ public interface UserDao {
     List<TransferHistory> getPendingTransfersForUser(String username);
 
     int requestResponse(String username, int transferId, boolean isApproved) throws NoSuchTransferIdException, InsufficientFundsException, NotPendingException;
+
+    double getBalanceByUserId(int id);
+
+    double getBalanceByAccountId(int id);
 }

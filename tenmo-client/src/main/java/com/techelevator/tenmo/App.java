@@ -108,15 +108,15 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 				//some kind of output
 			}
 
-		console.displayTransferHistory(transfers);
+		if (console.displayTransferHistory(transfers)) {
+			Integer transferID = console.getUserInputInteger("Please enter transfer ID to view details (0 to cancel)");
 
-		Integer transferID = console.getUserInputInteger("Please enter transfer ID to view details (0 to cancel)");
+			if(transferID == 0) {
+				return;
+			}
 
-		if(transferID == 0) {
-			return;
+			viewTransferDetails(transferID);
 		}
-
-		viewTransferDetails(transferID);
 	}
 
 	private void viewTransferDetails(int transferId) {
