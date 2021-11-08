@@ -235,6 +235,7 @@ public class JdbcUserDao implements UserDao {
     }
 
 
+    @Override
     @ResponseStatus(HttpStatus.CREATED)
     public int createTransfer(TransferPayment transfer, String username) throws InsufficientFundsException, IllegalAccessError, NoSuchUserException {
 
@@ -307,11 +308,13 @@ public class JdbcUserDao implements UserDao {
         return balance == null ? 0 : balance;
     }
 
+    @Override
     public double getBalanceByUserId(int id) {
         String sql = "select balance from accounts where user_id = ?;";
         return jdbcTemplate.queryForObject(sql, Double.class, id);
     }
 
+    @Override
     public double getBalanceByAccountId(int id) {
         String sql = "select balance from accounts where account_id = ?";
         return jdbcTemplate.queryForObject(sql, Double.class, id);
