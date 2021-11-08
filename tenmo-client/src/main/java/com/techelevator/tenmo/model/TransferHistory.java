@@ -41,9 +41,11 @@ public class TransferHistory {
 
     @Override
     public String toString() {
-        if(isFrom) {
-            return transferId + "    From: " + username +  "            $" + amount;
-        }
-        return transferId + "    To: " + username +  "          $" + amount;
+        return "TransferHistory{" +
+                "transferId=" + transferId +
+                ", isFrom=" + isFrom +
+                ", username='" + username + '\'' +
+                ", amount=" + amount +
+                '}';
     }
 }

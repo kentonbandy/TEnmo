@@ -11,7 +11,9 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class ConsoleService {
@@ -51,7 +53,11 @@ public class ConsoleService {
 		return choice;
 	}
 
-
+	public void pressEnterToContinue() {
+		System.out.println();
+		System.out.print("Press enter to continue :");
+		in.nextLine();
+	}
 
 	private void displayMenuOptions(Object[] options) {
 		out.println();
@@ -100,7 +106,7 @@ public class ConsoleService {
 	}
 
 	public void displayBalance(String balance) {
-		out.println("Your current account balance is: $" + balance);
+		out.println("Your current account balance is: $" + MoneyMath.format(balance));
 	}
 
 	public void displayUsers(List<User> users) {
@@ -109,8 +115,8 @@ public class ConsoleService {
 		System.out.println("Users");
 		System.out.println("ID		Name");
 		bar();
-		for (User user : users) {
-			System.out.println(users.toString());
+		for (User user : users) { // use clamper
+			System.out.println(user.toString());
 		}
 		bar();
 	}
@@ -119,13 +125,15 @@ public class ConsoleService {
 
 		bar();
 		System.out.println("Transfers");
-		System.out.println(clampToWidth("ID", 10) + clampToWidth("From/To", 22) + clampToWidth("Amount", 10));
+		System.out.println(clampToWidth("ID", 10) + clampToWidth("From/To", 22) + "Amount");
 		bar();
 		for (TransferHistory transfer : transfers) {
 			System.out.print(clampToWidth(String.valueOf(transfer.getTransferId()), 10));
 			System.out.print(transfer.isFrom() ? clampToWidth("From:", 6) : clampToWidth("To:", 6));
 			System.out.print(clampToWidth(transfer.getUsername(), 16));
-			System.out.println(transfer.getAmount());
+			double num = transfer.getAmount();
+			String converted = String.valueOf(num);
+			System.out.println("$" + MoneyMath.format(converted));
 		}
 		bar();
 	}
@@ -135,20 +143,108 @@ public class ConsoleService {
 		bar();
 		System.out.println("Transfer Details");
 		bar();
-		System.out.println(transferDetails.toString());
+		int width = 8;
+		System.out.println(clampToWidth("ID:", width) + transferDetails.getTransferId());
+		System.out.println(clampToWidth("From:", width) + transferDetails.getFrom());
+		System.out.println(clampToWidth("To:", width) + transferDetails.getTo());
+		System.out.println(clampToWidth("Type:", width) + transferDetails.getType());
+		System.out.println(clampToWidth("Status:", width) + transferDetails.getStatus());
+		double num = transferDetails.getAmount();
+		String converted = String.valueOf(num);
+		System.out.println(clampToWidth("Amount:", width) + "$" + MoneyMath.format(converted));
+		pressEnterToContinue();
 	}
 
-	public void displayPendingRequests(String pendingRequests) {
-		System.out.println(pendingRequests);
+	public TransferHistory pendingRequestsprompt(List<TransferHistory> requests) {
+
+		if (requests.size() == 0) {
+			longBar();
+			System.out.println("You have no pending transfer requests at this time.");
+			longBar();
+			pressEnterToContinue();
+			return null;
+		}
+
+		while (true) {
+			bar();
+			System.out.println("Pending Requests");
+			System.out.println(clampToWidth("ID", 8) + clampToWidth("From", 16) + "Amount");
+			bar();
+			Map<Integer,TransferHistory> requestMap = new HashMap<>();
+			for (TransferHistory request : requests) {
+				System.out.print(clampToWidth(String.valueOf(request.getTransferId()), 8));
+				System.out.print(clampToWidth(request.getUsername(), 16));
+				System.out.println(MoneyMath.format(String.valueOf(request.getAmount())));
+				requestMap.put(request.getTransferId(), request);
+			}
+			bar();
+
+			int choice = getUserInputInteger("Please enter transfer ID to approve/reject (0 to cancel)");
+			if (choice == 0) return null;
+			if (requestMap.containsKey(choice)) return requestMap.get(choice);
+			error("Please provide a valid transfer ID");
+		}
+	}
+
+
+	public int approveOrReject(TransferHistory transfer) {
+		while (true) {
+			bar();
+			System.out.println(transfer.getUsername() + " is requesting $" + MoneyMath.format(String.valueOf(transfer.getAmount())));
+			bar();
+			System.out.println("1: Approve");
+			System.out.println("2: Reject");
+			System.out.println("0: Take no action");
+			shortBar();
+			int choice = getUserInputInteger("Please choose an option");
+			if (choice == 1 || choice == 2 || choice == 0) return choice;
+			error("Please choose one of the given options");
+		}
+	}
+
+	private void longBar() {
+		System.out.println("---------------------------------------------------");
 	}
 
     private void bar() {
 		System.out.println("------------------------------------");
 	}
 
+	private void shortBar() {
+		System.out.println("---------");
+	}
+
 	private String clampToWidth(String word, int width) {
 		int len = word.length();
 		if (len >= width) return len > 2 ? word.substring(0,len-2) + ".." : word.substring(0,len);
 		return StringUtils.rightPad(word, width, " ");
+	}
+
+	public boolean transferSuccess(int transferId, boolean isRequest) {
+		bar();
+		String type = isRequest ? "request" : "transfer";
+		System.out.println(StringUtils.capitalize(type) + " successful! Your transfer ID is " + transferId + ".");
+		return viewTransferDetailsPrompt();
+	}
+
+	public boolean updateSuccess(int transferId, boolean isApproved) {
+		bar();
+		System.out.println("Update successful! You've " + (isApproved ? "approved" : "rejected") + " transfer ID: " + transferId + ".");
+		return viewTransferDetailsPrompt();
+	}
+
+	private boolean viewTransferDetailsPrompt() {
+		while (true) {
+			String input = getUserInput("Would you like to view the transfer details? (y/n): ").toLowerCase();
+			if (input.equals("y")) return true;
+			else if (input.equals("n")) return false;
+			else {
+				error("Please enter y or n");
+			}
+		}
+	}
+
+	public void error(String message) {
+		System.out.println("!!! " + message + " !!!");
 	}
 }

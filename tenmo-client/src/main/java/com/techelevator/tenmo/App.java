@@ -10,6 +10,7 @@ import jdk.swing.interop.SwingInterOpUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
@@ -87,6 +88,7 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 		ResponseEntity<String> balance = restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), String.class);
 		console.displayBalance(balance.getBody());
+		console.pressEnterToContinue();
 	}
 
 	private void viewTransferHistory() {	// -- code added here
@@ -114,21 +116,18 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			return;
 		}
 
-		//view transfer details
-		TransferDetails transferDetails = null;
-		try {
-			ResponseEntity<TransferDetails> response =
-					restTemplate.exchange(url + "/" + transferID, HttpMethod.GET, makeAuthEntity(), TransferDetails.class);
-			transferDetails = response.getBody();
-		} catch (RestClientResponseException ex) {
-			// handles exceptions thrown by rest template and contains status codes
-			// some kind of output
-		} catch (ResourceAccessException ex) {
-			// i/o error, ex: the server isn't running
-			//some kind of output
-		}
+		viewTransferDetails(transferID);
+	}
 
-		console.displayTransferDetails(transferDetails);
+	private void viewTransferDetails(int transferId) {
+		String url = API_BASE_URL + "transfers/" + transferId;
+		TransferDetails transfer = null;
+		try {
+			ResponseEntity<TransferDetails> response = restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), TransferDetails.class);
+			if (response != null) console.displayTransferDetails(response.getBody());
+		} catch (RestClientException e) {
+			console.error(e.getMessage());
+		}
 	}
 
 	private	void viewUserList() {	// -- code added here
@@ -153,13 +152,13 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	private void viewPendingRequests() {	// -- Denny code added
 		//show list of transfers from transfer table with pending status
-		String url = API_BASE_URL + "transfers/pending";
-		List<TransferHistory> pendingTransfers = null;
+		String url = API_BASE_URL + "pending";
+		List<TransferHistory> pendingRequests = null;
 
 		try {
 			ResponseEntity<List<TransferHistory>> response =
 					restTemplate.exchange(url, HttpMethod.GET, makeAuthEntity(), new ParameterizedTypeReference<List<TransferHistory>>(){});
-					pendingTransfers = response.getBody();
+					pendingRequests = response.getBody();
 		} catch (RestClientResponseException ex) {
 			// handles exceptions thrown by rest template and contains status codes
 			// some kind of output
@@ -168,39 +167,58 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			//some kind of output
 		}
 
-		console.displayTransferHistory(pendingTransfers);
+		if (pendingRequests != null) {
+			TransferHistory transfer = console.pendingRequestsprompt(pendingRequests);
+			if (transfer == null) return;
+			int choice = console.approveOrReject(transfer);
+			if (choice == 0) return;
+			requestResponse(transfer.getTransferId(), choice == 1);
+		}
+	}
 
+	private void requestResponse(int transferId, boolean isApproved) {
+    	String url = API_BASE_URL + "requests/" + transferId;
+    	BigOlBoolean approval = new BigOlBoolean();
+    	approval.setApproved(isApproved);
+    	try {
+			ResponseEntity<Integer> response =
+					restTemplate.exchange(url, HttpMethod.PUT, makeAuthEntity(approval), Integer.class);
+			if (console.updateSuccess(transferId, isApproved)) viewTransferDetails(transferId);
+		} catch (RestClientResponseException | ResourceAccessException e) {
+    		console.error(e.getMessage());
+		}
 	}
 
 	private void sendBucks() {	// -code added here
-    	
+
 		// On failure: use console to display error message
 		TransferPayment transfer = new TransferPayment();
 
 		viewUserList();
 
-		Integer personToID = console.getUserInputInteger("Enter ID of user you are sending money to (0 to cancel)");
+		Integer personToId = console.getUserInputInteger("Enter ID of user you are sending money to (0 to cancel)");
 
-		if(personToID == 0) {
+		if(personToId == 0) {
 			return;
 		}
 
 		Double amountToTransfer = console.getUserInputDouble("Enter amount");
 
 		transfer.setFromUserId(currentUser.getUser().getId());
-		transfer.setToUserId(personToID);
+		transfer.setToUserId(personToId);
 		transfer.setAmount(amountToTransfer);
 
 		ResponseEntity<Integer> response;
 		try {
 			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
-			System.out.println(response.getBody());
+			Integer transferId = response.getBody();
+			if (transferId != null && console.transferSuccess(transferId, false)) viewTransferDetails(transferId);
 		} catch (RestClientResponseException | ResourceAccessException e) {
-			System.out.println(e.getMessage());
+			console.error(e.getMessage());
 		}
-    }
+	}
 
-	private void requestBucks() {	// --code added here
+	private void requestBucks() {
 
 		TransferPayment transfer = new TransferPayment();
 
@@ -220,10 +238,12 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 		ResponseEntity<Integer> response;
 		try {
-			response = restTemplate.exchange(API_BASE_URL + "transfers", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
-			System.out.println(response.getBody());
+			response = restTemplate.exchange(API_BASE_URL + "requests", HttpMethod.POST , makeTransferPaymentEntity(transfer), Integer.class);
+			Integer transferId = response.getBody();
+
+			if (transferId != null && console.transferSuccess(transferId, true)) viewTransferDetails(transferId);
 		} catch (RestClientResponseException | ResourceAccessException e) {
-			System.out.println(e.getMessage());
+			console.error(e.getMessage());
 		}
 	}
 	
@@ -296,6 +316,13 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setBearerAuth(currentUser.getToken());
 		return new HttpEntity<>(headers);
+	}
+
+	private HttpEntity<BigOlBoolean> makeAuthEntity(BigOlBoolean bool) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setBearerAuth(currentUser.getToken());
+		return new HttpEntity<>(bool, headers);
 	}
 
 	/**
