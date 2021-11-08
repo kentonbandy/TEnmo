@@ -102,10 +102,10 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			transfers = response.getBody();
 		} catch (RestClientResponseException ex) {
 				// handles exceptions thrown by rest template and contains status codes
-				// some kind of output
+				console.error(ex.getMessage());
 			} catch (ResourceAccessException ex) {
 				// i/o error, ex: the server isn't running
-				//some kind of output
+				console.error(ex.getMessage());
 			}
 
 		if (console.displayTransferHistory(transfers)) {
@@ -141,16 +141,16 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			users = response.getBody();
 		} catch (RestClientResponseException ex) {
 			// handles exceptions thrown by rest template and contains status codes
-			// some kind of output
+			console.error(ex.getMessage());
 		} catch (ResourceAccessException ex) {
 			// i/o error, ex: the server isn't running
-			//some kind of output
+			console.error(ex.getMessage());
 		}
 
 		console.displayUsers(users);
 	}
 
-	private void viewPendingRequests() {	// -- Denny code added
+	private void viewPendingRequests() {	// -- code added here
 		//show list of transfers from transfer table with pending status
 		String url = API_BASE_URL + "pending";
 		List<TransferHistory> pendingRequests = null;
@@ -161,10 +161,10 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 					pendingRequests = response.getBody();
 		} catch (RestClientResponseException ex) {
 			// handles exceptions thrown by rest template and contains status codes
-			// some kind of output
+			console.error(ex.getMessage());
 		} catch (ResourceAccessException ex) {
 			// i/o error, ex: the server isn't running
-			//some kind of output
+			console.error(ex.getMessage());
 		}
 
 		if (pendingRequests != null) {
@@ -191,7 +191,6 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	private void sendBucks() {	// -code added here
 
-		// On failure: use console to display error message
 		TransferPayment transfer = new TransferPayment();
 
 		viewUserList();
